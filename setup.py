@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="blockExplorer",
-    version="0.1.0",
+    name="pyExplorer",
+    version="0.1.3",
     author="Mmdrza",
     author_email="pymmdrza@gmail.com",
     description="A professional blockchain explorer web application",

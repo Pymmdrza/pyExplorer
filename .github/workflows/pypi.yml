@@ -1,4 +1,4 @@
-name: pyExplorer Package
+name: blockExplorer Package
 
 on:
   push:
