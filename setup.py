@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="pyExplorer",
+    name="blockExplorer",
     version="0.1.0",
     author="Mmdrza",
     author_email="pymmdrza@gmail.com",
@@ -18,7 +18,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.11",
+    python_requires=">=3.10",
     install_requires=[
         "asyncio>=3.4.3",
         "flask>=3.1.0",
@@ -32,7 +32,7 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'pyExplorer=pyExplorer.cli:main',
+            'blockExplorer=blockExplorer.cli:main',
         ],
     },
 )
