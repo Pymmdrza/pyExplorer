@@ -18,13 +18,13 @@ A professional blockchain explorer web application that provides comprehensive i
 
 ```bash
 # Install the blockchain explorer
-pip install pyexplorer
+pip install blockExplorer
 
 # Install required dependencies
-pyexplorer install local
+blockExplorer install local
 
 # Run the application
-pyexplorer run local
+blockExplorer run local
 ```
 
 The application will be available at `http://localhost:5000`
@@ -33,13 +33,13 @@ The application will be available at `http://localhost:5000`
 
 ```bash
 # Install the blockchain explorer
-pip install blockchain-explorer
+pip install blockExplorer
 
 # Install Docker dependencies and setup
-pyexplorer install docker
+blockExplorer install docker
 
 # Run using Docker
-pyexplorer run docker
+blockExplorer run docker
 ```
 
 ## Configuration
@@ -52,19 +52,19 @@ To set up the development environment:
 
 ```bash
 git clone https://github.com/Pymmdrza/pyExplorer
-cd pyExplorer
+cd blockExplorer
 pip install -e .
 ```
 
 ## CLI Commands
 
 ### Installation
-- `pyexplorer install local`: Install all required dependencies for local deployment
-- `pyexplorer install docker`: Setup Docker environment and install dependencies
+- `blockExplorer install local`: Install all required dependencies for local deployment
+- `blockExplorer install docker`: Setup Docker environment and install dependencies
 
 ### Running
-- `pyexplorer run local`: Run the application locally
-- `pyexplorer run docker`: Run the application using Docker
+- `blockExplorer run local`: Run the application locally
+- `blockExplorer run docker`: Run the application using Docker
 
 ## License
 
