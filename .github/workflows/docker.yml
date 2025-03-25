@@ -20,7 +20,7 @@ jobs:
 
       - name: Build and Tag Docker Image
         run: |
-          IMAGE_NAME=pymmdrza/pyExplorer
+          IMAGE_NAME=pymmdrza/pyexplorer
           IMAGE_TAG=latest
           docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
