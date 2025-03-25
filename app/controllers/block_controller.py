@@ -96,7 +96,7 @@ def get_blockchain_metrics() -> Optional[Dict[str, Any]]:
         tx_count_response = make_request(url)
         if tx_count_response:
             try:
-                metrics['tx_24h'] = int(float(tx_count_response.get('text', 0)))
+                metrics['tx_24h'] = int(tx_count_response.get('text', 0))
             except ValueError as e:
                 logging.error(f"Error parsing transaction count: {str(e)}")
                 metrics['tx_24h'] = 0
