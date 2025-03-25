@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="blockExplorer",
-    version="0.1.6",
+    version="0.1.9",
     author="Mmdrza",
     author_email="pymmdrza@gmail.com",
     description="A professional blockchain explorer web application",
