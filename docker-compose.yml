@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app
+    volumes:
+      - ./config.json:/app/config.json
+    restart: unless-stopped
+
+  # You can add more services here if needed, like:
+  # - Redis for caching
+  # - PostgreSQL for database
+  # - Nginx for reverse proxy

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% from 'macros.html' import blockchain_id %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Transaction Details</h5>
+        <div class="btn-group">
+            <a href="{{ url_for('transaction_receipt', tx_hash=transaction.hash) }}" class="btn btn-outline-primary me-2">
+                <svg class="me-2" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Receipt
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <svg class="me-2" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                    </svg>
+                    Export Data
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('export_transaction', tx_hash=transaction.hash, format='json') }}">JSON</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('export_transaction', tx_hash=transaction.hash, format='csv') }}">CSV</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Transaction Hash -->
+        <div class="mb-4">
+            <h6>Transaction Hash</h6>
+            {{ blockchain_id(transaction.hash) }}
+        </div>
+
+        <!-- Primary Transaction Details -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Total Value</span>
+                    <span class="stat-value">{{ "%.8f"|format(transaction.value) }} BTC</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Fee</span>
+                    <span class="stat-value">{{ "%.8f"|format(transaction.fee) }} BTC</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Block</span>
+                    <a href="{{ url_for('block', height=transaction.block_height) }}" class="stat-value">
+                        {{ "{:,}".format(transaction.block_height) }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Transaction Details -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value">{{ transaction.time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Confirmations</span>
+                    <span class="stat-value">{{ "{:,}".format(transaction.confirmations) }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Size</span>
+                    <span class="stat-value">{{ "{:,}".format(transaction.size) }} bytes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inputs -->
+        <h6>Inputs</h6>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="hash-column">Address</th>
+                        <th>Value (BTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for input in transaction.inputs %}
+                    <tr>
+                        <td class="hash-column">
+                            {% if input.prev_out.addr != 'Unknown' %}
+                            {{ blockchain_id(input.prev_out.addr, url_for('address', address=input.prev_out.addr)) }}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </td>
+                        <td>{{ "%.8f"|format(input.prev_out.value) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Outputs -->
+        <h6>Outputs</h6>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="hash-column">Address</th>
+                        <th>Value (BTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for output in transaction.out %}
+                    <tr>
+                        <td class="hash-column">
+                            {% if output.addr != 'Unknown' %}
+                            {{ blockchain_id(output.addr, url_for('address', address=output.addr)) }}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </td>
+                        <td>{{ "%.8f"|format(output.value) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add copy functionality to all copy buttons
+        document.querySelectorAll('.copy-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const textToCopy = this.dataset.clipboard;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'copy-tooltip';
+                    tooltip.textContent = 'Copied!';
+                    tooltip.style.top = `${this.getBoundingClientRect().top - 30}px`;
+                    tooltip.style.left = `${this.getBoundingClientRect().left}px`;
+                    document.body.appendChild(tooltip);
+                    setTimeout(() => tooltip.remove(), 1500);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

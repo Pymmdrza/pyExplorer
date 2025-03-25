@@ -1,0 +1,91 @@
+{
+    "bitcoin": {
+        "node": {
+            "api": {
+                "atomic": {
+                    "base": "https://bitcoin.atomicwallet.io/api/v2/",
+                    "addr": {
+                        "prefix": "address/",
+                        "suffix": {
+                            "basic": "?details=basic",
+                            "txs": "?details=txs",
+                            "txslight": "?details=txslight"
+                        }
+                    },
+                    "blockIndex": "block-index/",
+                    "block": "block/",
+                    "tx": "tx/"
+                },
+                "guarda": {
+                    "base": "https://btcbook.guarda.co/api/v2/",
+                    "addr": {
+                        "prefix": "address/",
+                        "suffix": {
+                            "basic": "?details=basic",
+                            "txs": "?details=txs",
+                            "txslight": "?details=txslight"
+                        }
+                    },
+                    "blockIndex": "block-index/",
+                    "block": "block/",
+                    "tx": "tx/"
+                },
+                "trezor": {
+                    "base": "https://btc1.trezor.io/api/v2/",
+                    "addr": {
+                        "prefix": "address/",
+                        "suffix": {
+                            "basic": "?details=basic",
+                            "txs": "?details=txs",
+                            "txslight": "?details=txslight"
+                        }
+                    },
+                    "blockIndex": "block-index/",
+                    "block": "block/",
+                    "tx": "tx/"
+                }
+            }
+        },
+        "blockchain": {
+            "state": "https://api.blockchain.info/stats",
+            "base": "https://blockchain.info/",
+            "main": {
+                "difficulty": "q/getdifficulty",
+                "blockcount": "q/getblockcount",
+                "latestHash": "q/latesthash",
+                "bcPerBlock": "q/bcperblock",
+                "totalBc": "q/totalbc",
+                "probability": "q/probability",
+                "hashesWin": "q/hashestowin",
+                "nextReTarget": "q/nextretarget",
+                "avgTxSize": "q/avgtxsize",
+                "avgTxValue": "q/avgtxvalue",
+                "interval": "q/interval",
+                "eta": "q/eta",
+                "avgTxNum": "q/avgtxnumber"
+            },
+            "tools": {
+                "addrToHash": "q/addresstohash/",
+                "hashToAddr": "q/hashtoaddress/",
+                "pubToAddr": "q/pubkeyaddr/",
+                "addrToPub": "q/addrpubkey/"
+            },
+            "lookups": {
+                "txTotalBcOutput": "q/txtotalbtcoutput/",
+                "txTotalBcInput": "q/txtotalbtcinput/",
+                "txFee": "q/txfee/"
+            },
+            "misc": {
+                "unconfirmedCount": "q/unconfirmedcount",
+                "price24h": "q/24hrprice",
+                "marketcap": "q/marketcap",
+                "txCount24h": "q/24hrtransactioncount",
+                "btcSent24h": "q/24hrbtcsent",
+                "hashRate": "q/hashrate",
+                "mempoolSize": "q/mempoolsize",
+                "difficulty24h": "q/24hrdifficulty",
+                "blockInterval": "q/interval"
+            }
+        }
+    }
+}

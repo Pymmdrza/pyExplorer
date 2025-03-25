@@ -1,0 +1,594 @@
+/* Custom styles with Material UI theme */
+:root {
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.08);
+    --card-border-radius: 8px;
+    --transition-speed: 0.2s;
+    --primary-color: #1976d2;
+    --primary-rgb: 25, 118, 210;
+    --surface-color: var(--bs-body-bg);
+    --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
+    --elevation-2: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+    --elevation-3: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10);
+    --gradient-light: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+    --gradient-dark: linear-gradient(145deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+    --bs-info: #17a2b8;
+    /* Added this variable */
+    --bs-info-rgb: 23, 162, 184;
+    /* Added this variable */
+
+}
+
+[data-bs-theme="dark"] {
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
+    --primary-color: #90caf9;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Roboto Mono', monospace;
+    /* Changed font-family */
+    font-size: 0.75rem;
+    /* Reduced font size */
+    background-color: var(--surface-color);
+    letter-spacing: 0.01em;
+}
+
+/* Card styles */
+.card {
+    border: none;
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    background: var(--surface-color);
+    overflow: hidden;
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    box-shadow: var(--elevation-2);
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.08);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--bs-emphasis-color);
+    letter-spacing: 0.02em;
+}
+
+/* Table styles */
+.table {
+    margin-bottom: 0;
+    width: 100%;
+    background: transparent;
+    table-layout: fixed;
+    /* Added for consistent width */
+}
+
+.table th {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.75rem;
+    color: var(--bs-emphasis-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+    background: rgba(var(--bs-emphasis-color-rgb), 0.02);
+    font-family: 'Roboto Mono', monospace;
+    overflow: hidden;
+    /* Added for text overflow handling */
+    text-overflow: ellipsis;
+    /* Added for text overflow handling */
+    white-space: nowrap;
+    /* Added for text overflow handling */
+}
+
+.table td {
+    font-size: 0.75rem;
+    padding: 0.75rem;
+    vertical-align: middle;
+    border: none;
+    transition: background-color 0.2s ease;
+    font-family: 'Roboto Mono', monospace;
+    overflow: hidden;
+    /* Added for text overflow handling */
+    text-overflow: ellipsis;
+    /* Added for text overflow handling */
+    white-space: nowrap;
+    /* Added for text overflow handling */
+}
+
+.table-hover tbody tr {
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+}
+
+/* Hash column adjustments */
+.hash-column {
+    width: 25%;
+    min-width: 180px;
+    max-width: 300px;
+}
+
+/* Blockchain ID styling */
+.blockchain-id {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(var(--primary-rgb), 0.08);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    max-width: 100%;
+    margin: 0;
+}
+
+.blockchain-id a,
+.blockchain-id span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.75rem;
+}
+
+/* Amount styling */
+.amount-positive,
+.amount-negative {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+}
+
+.amount-positive {
+    color: #28a745;
+}
+
+.amount-negative {
+    color: #dc3545;
+}
+
+/* Copy button adjustments */
+.copy-button {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    padding: 0.15rem;
+    margin-left: 0.25rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+.copy-button:hover {
+    opacity: 1;
+    background: rgba(var(--primary-rgb), 0.08);
+}
+
+.copy-button:active {
+    transform: scale(0.95);
+    background: rgba(var(--primary-rgb), 0.12);
+}
+
+/* Navbar styling */
+.navbar {
+    box-shadow: var(--elevation-1);
+    backdrop-filter: blur(8px);
+}
+
+.navbar-brand {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* Button styling */
+.btn {
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gradient-light);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.btn:hover::before {
+    opacity: 1;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-outline-light {
+    border-width: 1.5px;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: transparent;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+}
+
+.btn-outline-primary:hover {
+    background: rgba(var(--primary-rgb), 0.04);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:active {
+    background: rgba(var(--primary-rgb), 0.1) !important;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* View more button */
+.view-more-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid currentColor;
+    text-decoration: none;
+}
+
+.view-more-btn:hover {
+    background: rgba(var(--primary-rgb), 0.04);
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+.view-more-btn svg {
+    margin-left: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.view-more-btn:hover svg {
+    transform: translateX(3px);
+}
+
+/* Search form styling */
+.search-form {
+    flex: 1;
+    max-width: 600px;
+    margin-left: 2rem;
+}
+
+.search-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.35rem 2.5rem 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.75rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+}
+
+/* Search button */
+.btn-search {
+    position: absolute;
+    right: 0;
+    padding: 0.25rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-search:hover {
+    color: white;
+    background: transparent;
+}
+
+.btn-search:active {
+    transform: scale(0.95);
+}
+
+/* Status indicators */
+#connection-status {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Stats and metrics */
+.stats-card {
+    background: var(--surface-color);
+    position: relative;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--elevation-1);
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gradient-light);
+    pointer-events: none;
+}
+
+[data-bs-theme="dark"] .stats-card::before {
+    background: var(--gradient-dark);
+}
+
+.stats-card:hover {
+    box-shadow: var(--elevation-2);
+}
+
+.stats-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.08);
+    padding: 1rem 1.25rem;
+}
+
+.stats-card .card-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+
+/* Adding new styles for stat items */
+.stat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(var(--bs-emphasis-color-rgb), 0.02);
+    transition: background-color 0.2s ease;
+}
+
+.stat-item:hover {
+    background: rgba(var(--bs-emphasis-color-rgb), 0.04);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--bs-emphasis-color);
+}
+
+
+/* Live transactions animation */
+@keyframes addTransaction {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes removeTransaction {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+}
+
+#live-transactions tr.new-transaction {
+    animation: addTransaction 0.3s ease forwards;
+}
+
+#live-transactions tr.removing-transaction {
+    animation: removeTransaction 0.3s ease forwards;
+}
+
+/* Ensure table maintains consistent dimensions */
+.table-responsive {
+    overflow-x: hidden;
+}
+
+
+.amount-column {
+    width: 15%;
+}
+
+.address-column {
+    width: 30%;
+}
+
+.footer {
+    margin-top: auto;
+    padding: 1.5rem 0;
+    background: linear-gradient(to bottom, transparent, rgba(var(--bs-dark-rgb), 0.05));
+}
+
+.copy-tooltip {
+    position: fixed;
+    background: var(--bs-success);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    z-index: 1000;
+    animation: copySuccess 1.5s ease forwards;
+}
+
+@keyframes copySuccess {
+
+    0%,
+    100% {
+        opacity: 0;
+    }
+
+    10%,
+    90% {
+        opacity: 1;
+    }
+}
+
+.text-truncate {
+    max-width: 100%;
+    display: inline-block;
+    vertical-align: middle;
+    direction: ltr;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--bs-emphasis-color);
+}
+
+tr {
+    transition: all 0.3s steps(3, end);
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+    margin: 0;
+}
+
+.status-connected {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-disconnected {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+/* Address styling */
+.blockchain-id.address {
+    background: rgba(var(--bs-info-rgb), 0.08);
+}
+
+.blockchain-id.address a,
+.blockchain-id.address span {
+    color: var(--bs-info);
+}
+
+.blockchain-id.sender {
+    background: rgba(220, 53, 69, 0.08);
+}
+
+.blockchain-id.sender a,
+.blockchain-id.sender span {
+    color: #dc3545;
+}
+
+.blockchain-id.receiver {
+    background: rgba(40, 167, 69, 0.08);
+}
+
+.blockchain-id.receiver a,
+.blockchain-id.receiver span {
+    color: #28a745;
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Transaction Receipt</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            font-size: 10px;
+        }
+        .header {
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 2px solid #1976d2;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+        .website {
+            color: #666;
+            font-size: 12px;
+        }
+        .section {
+            margin-bottom: 15px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 5px;
+            background: #f8f9fa;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            width: 30%;
+        }
+        .value {
+            font-family: monospace;
+            width: 70%;
+            word-break: break-all;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">Blockchain Explorer</div>
+        <div class="website">blockchain-explorer.replit.app</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Transaction Details</div>
+        <div class="detail-row">
+            <span class="label">Transaction Hash</span>
+            <span class="value">{{ transaction.hash }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Time</span>
+            <span class="value">{{ transaction.time.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Block Height</span>
+            <span class="value">{{ transaction.block_height }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Total Value</span>
+            <span class="value">{{ "%.8f"|format(transaction.value) }} BTC</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Fee</span>
+            <span class="value">{{ "%.8f"|format(transaction.fee) }} BTC</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Confirmations</span>
+            <span class="value">{{ transaction.confirmations }}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Input Addresses</div>
+        {% for input in transaction.inputs %}
+        <div class="detail-row">
+            <span class="label">Address</span>
+            <span class="value">{{ input.prev_out.addr }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Amount</span>
+            <span class="value">{{ "%.8f"|format(input.prev_out.value) }} BTC</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Output Addresses</div>
+        {% for output in transaction.out %}
+        <div class="detail-row">
+            <span class="label">Address</span>
+            <span class="value">{{ output.addr }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Amount</span>
+            <span class="value">{{ "%.8f"|format(output.value) }} BTC</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer">
+        This receipt was generated on {{ now.strftime('%Y-%m-%d %H:%M:%S UTC') }}<br>
+        Blockchain Explorer - Comprehensive blockchain analysis and exploration
+    </div>
+</body>
+</html>

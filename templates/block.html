@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% from 'macros.html' import blockchain_id %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Block Details</h5>
+    </div>
+    <div class="card-body">
+        <!-- Block Hash -->
+        <div class="mb-4">
+            <h6>Block Hash</h6>
+            {{ blockchain_id(block.hash) }}
+        </div>
+
+        <!-- Primary Block Details -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="stat-item">
+                    <span class="stat-label">Height</span>
+                    <span class="stat-value">{{ "{:,}".format(block.height) }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-item">
+                    <span class="stat-label">Timestamp</span>
+                    <span class="stat-value">{{ block.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Block Details -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Transactions</span>
+                    <span class="stat-value">{{ "{:,}".format(block.tx_count) }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Size</span>
+                    <span class="stat-value">{{ "{:,}".format(block.size) }} bytes</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Difficulty</span>
+                    <span class="stat-value">{{ "%.2e"|format(block.difficulty) }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Version</span>
+                    <span class="stat-value">{{ block.version }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Nonce</span>
+                    <span class="stat-value">{{ "{:,}".format(block.nonce) }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-item">
+                    <span class="stat-label">Bits</span>
+                    <span class="stat-value">{{ block.bits }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Block Transactions -->
+        <div class="mb-4">
+            <h6>Block Transactions</h6>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th class="hash-column">Transaction Hash</th>
+                            <th>Time</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in block.transactions %}
+                        <tr>
+                            <td class="hash-column">
+                                {{ blockchain_id(tx.txid, url_for('transaction', tx_hash=tx.txid)) }}
+                            </td>
+                            <td>{{ datetime.fromtimestamp(tx.blockTime).strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ "%.8f"|format(tx.value|float / 100000000) }} BTC</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if block.total_pages > 1 %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Block transactions pagination">
+                <ul class="pagination">
+                    {% if block.current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('block', height=block.height, page=block.current_page-1) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% with start_page = [1, block.current_page-2]|max %}
+                    {% with end_page = [block.total_pages+1, block.current_page+3]|min %}
+                    {% for p in range(start_page, end_page) %}
+                    <li class="page-item {% if p == block.current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('block', height=block.height, page=p) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    {% endwith %}
+                    {% endwith %}
+
+                    {% if block.current_page < block.total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('block', height=block.height, page=block.current_page+1) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add copy functionality to all copy buttons
+        document.querySelectorAll('.copy-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const textToCopy = this.dataset.clipboard;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'copy-tooltip';
+                    tooltip.textContent = 'Copied!';
+                    tooltip.style.top = `${this.getBoundingClientRect().top - 30}px`;
+                    tooltip.style.left = `${this.getBoundingClientRect().left}px`;
+                    document.body.appendChild(tooltip);
+                    setTimeout(() => tooltip.remove(), 1500);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

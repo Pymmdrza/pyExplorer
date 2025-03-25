@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title">Live Transactions</h5>
+        <span class="badge bg-success" id="connection-status">Connected</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Hash</th>
+                        <th>Amount (BTC)</th>
+                        <th>Time</th>
+                        <th>From</th>
+                        <th>To</th>
+                    </tr>
+                </thead>
+                <tbody id="live-transactions">
+                    <!-- Live transactions will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const txTable = document.getElementById('live-transactions');
+        const statusBadge = document.getElementById('connection-status');
+        const maxRows = 100;  // Show more transactions on dedicated page
+
+        function formatAddress(addr) {
+            if (!addr) return 'Unknown';
+            return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+        }
+
+        function formatAddresses(addresses) {
+            if (!addresses || addresses.length === 0) return 'Unknown';
+            return formatAddress(addresses[0]) + (addresses.length > 1 ? ` +${addresses.length - 1}` : '');
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleTimeString();
+        }
+
+        function addTransaction(tx) {
+            const row = document.createElement('tr');
+            const amountClass = tx.amount >= 0 ? 'amount-positive' : 'amount-negative';
+
+            row.innerHTML = `
+                <td><a href="/tx/${tx.hash}" class="text-truncate" style="max-width: 150px;">${formatAddress(tx.hash)}</a></td>
+                <td class="${amountClass}">${tx.amount.toFixed(8)}</td>
+                <td>${formatTime(tx.time)}</td>
+                <td>${formatAddresses(tx.from)}</td>
+                <td>${formatAddresses(tx.to)}</td>
+            `;
+
+            txTable.insertBefore(row, txTable.firstChild);
+
+            while (txTable.children.length > maxRows) {
+                txTable.removeChild(txTable.lastChild);
+            }
+        }
+
+        const evtSource = new EventSource('/transactions/stream');
+
+        evtSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.ping) return;
+            addTransaction(data);
+        };
+
+        evtSource.onerror = function() {
+            statusBadge.textContent = 'Disconnected';
+            statusBadge.classList.remove('bg-success');
+            statusBadge.classList.add('bg-danger');
+        };
+
+        evtSource.onopen = function() {
+            statusBadge.textContent = 'Connected';
+            statusBadge.classList.remove('bg-danger');
+            statusBadge.classList.add('bg-success');
+        };
+    });
+</script>
+{% endblock %}

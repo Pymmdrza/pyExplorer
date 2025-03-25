@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include app/templates *
+recursive-include app/static *
+recursive-include app/config *.json
