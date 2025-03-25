@@ -1,5 +1,5 @@
 # Metadata
-__version__ = "0.1.3"
+__version__ = "0.1.6"
 __license__ = "MIT"
 __author__ = "Mohammadreza (MMDRZA)"
 __email__ = "PyMmdrza@gmail.com"
