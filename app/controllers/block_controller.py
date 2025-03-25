@@ -86,7 +86,7 @@ def get_blockchain_metrics() -> Optional[Dict[str, Any]]:
         difficulty_response = make_request(url)
         if difficulty_response:
             try:
-                metrics['difficulty'] = float(difficulty_response.get('text', 0))
+                metrics['difficulty'] = difficulty_response.get('text', 0)
             except ValueError as e:
                 logging.error(f"Error parsing difficulty: {str(e)}")
                 metrics['difficulty'] = 0

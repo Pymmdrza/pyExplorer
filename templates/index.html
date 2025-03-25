@@ -20,14 +20,6 @@
                         <span class="stat-label">Hash Rate</span>
                         <span class="stat-value">{{ "%.2f"|format(stats.hash_rate|float) }} TH/s</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Total Blocks</span>
-                        <span class="stat-value">{{ "{:,}".format(stats.n_blocks_total|int) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Block Time</span>
-                        <span class="stat-value">{{ "%.1f"|format(stats.minutes_between_blocks|float) }} min</span>
-                    </div>
                 </div>
                 {% else %}
                 <div class="text-center text-muted py-4">
@@ -42,18 +34,18 @@
     <div class="col-md-6">
         <div class="card stats-card h-100">
             <div class="card-header">
-                <h5 class="card-title">Network Metrics</h5>
+                <h5 class="card-title">Block</h5>
             </div>
             <div class="card-body">
-                {% if metrics %}
+                {% if stats %}
                 <div class="d-flex flex-column gap-3">
                     <div class="stat-item">
-                        <span class="stat-label">Network Difficulty</span>
-                        <span class="stat-value">{{ metrics.difficulty|format_large_number }}</span>
+                        <span class="stat-label">Block Time</span>
+                        <span class="stat-value">{{ "%.1f"|format(stats.minutes_between_blocks|float) }} min</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">24h Transactions</span>
-                        <span class="stat-value">{{ metrics.tx_24h|format_large_number }}</span>
+                        <span class="stat-label">Total Blocks</span>
+                        <span class="stat-value">{{ "{:,}".format(stats.n_blocks_total|int) }}</span>
                     </div>
                 </div>
                 {% else %}
