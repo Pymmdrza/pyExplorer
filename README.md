@@ -14,6 +14,13 @@ A professional blockchain explorer web application that provides comprehensive i
 
 ## Quick Start
 
+### Docker
+
+```
+docker pull pymmdrza/pyexplorer:latest
+docker run -d -p 5000:5000 --name pyexplorer pymmdrza/pyexplorer:latest
+```
+
 ### Local Installation
 
 ```bash
