@@ -8,8 +8,8 @@ from app import app
 # --- Configuration for GitHub Pages ---
 # Sets the base URL. CRITICAL for links/CSS/JS on GitHub Pages.
 # Must match your repository name structure.
-print("Setting FREEZER_BASE_URL to '/pyExplorer/'")
-app.config['FREEZER_BASE_URL'] = '/pyExplorer/'
+print("Setting FREEZER_BASE_URL to '/'")
+app.config['FREEZER_BASE_URL'] = '/'
 
 # Sets the output directory for the static files
 app.config['FREEZER_DESTINATION'] = 'build'
