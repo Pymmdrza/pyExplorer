@@ -1,6 +1,5 @@
 asyncio
 flask
-Frozen-Flask
 pandas
 python-dotenv
 requests
