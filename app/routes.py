@@ -231,3 +231,8 @@ def stream_transactions():
             'X-Accel-Buffering': 'no'
         }
     )
+
+@app.route('/transactions')
+def transactions():
+    """Display live transactions page"""
+    return render_template('transactions.html')
