@@ -7,8 +7,8 @@ from app import app
 
 # --- Configuration for GitHub Pages ---
 print("Setting FREEZER_BASE_URL to '/'")
-app.config['FREEZER_BASE_URL'] = '/pyExplorer/'
-app.config['FREEZER_DESTINATION'] = 'build'
+app.config['FREEZER_BASE_URL'] = '/'
+app.config['FREEZER_DESTINATION'] = './build'
 app.config['FREEZER_REMOVE_EXTRA_FILES'] = False
 # app.config['FREEZER_FOLLOW_REDIRECTS'] = True # May not be needed if we ignore /search
 
