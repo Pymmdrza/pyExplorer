@@ -1,4 +1,4 @@
-# Blockchain Explorer
+# Block Explorer (pyExplorer)
 
 A professional blockchain explorer web application that provides comprehensive insights into blockchain networks, with enhanced data visualization and user interaction capabilities.
 
