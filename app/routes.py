@@ -19,7 +19,7 @@ from app.utils.exports import export_to_json, export_to_csv, format_transaction_
 latest_transactions = queue.Queue(maxsize=100)  # Keep last 100 transactions
 
 def handle_new_transaction(tx):
-    if latest_transactions.full():
+    if len(latest_transactions) >= 30:
         latest_transactions.get()  # Remove oldest transaction if queue is full
     latest_transactions.put(tx)
 
