@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% from 'macros.html' import blockchain_id, copy_icon %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Blockchain Statistics -->
+    <div class="col-md-6">
+        <div class="card stats-card h-100">
+            <div class="card-header">
+                <h5 class="card-title">Blockchain Statistics</h5>
+            </div>
+            <div class="card-body">
+                {% if stats %}
+                <div class="d-flex flex-column gap-3">
+                    <div class="stat-item">
+                        <span class="stat-label">Market Price (USD)</span>
+                        <span class="stat-value">${{ "%.2f"|format(stats.market_price_usd|float) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Hash Rate</span>
+                        <span class="stat-value">{{ "%.2f"|format(stats.hash_rate|float) }} TH/s</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <p>Statistics temporarily unavailable</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Metrics -->
+    <div class="col-md-6">
+        <div class="card stats-card h-100">
+            <div class="card-header">
+                <h5 class="card-title">Network Metrics</h5>
+            </div>
+            <div class="card-body">
+                {% if stats %}
+                <div class="d-flex flex-column gap-3">
+                    <div class="stat-item">
+                        <span class="stat-label">Block Time</span>
+                        <span class="stat-value">{{ "%.1f"|format(stats.minutes_between_blocks|float) }} min</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Blocks</span>
+                        <span class="stat-value">{{ "{:,}".format(stats.n_blocks_total|int) }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <p>Metrics temporarily unavailable</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Transactions -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Live Transactions</h5>
+        <span id="connection-status" class="status-connected">Connected</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="hash-column">Hash</th>
+                        <th class="amount-column">Amount (BTC)</th>
+                        <th class="address-column">From</th>
+                        <th class="address-column">To</th>
+                    </tr>
+                </thead>
+                <tbody id="live-transactions">
+                    <!-- Live transactions will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center p-4 border-top">
+            <a href="/transactions" class="view-more-btn">
+                View More Transactions
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const txTable = document.getElementById('live-transactions');
+        const statusBadge = document.getElementById('connection-status');
+        const maxRows = 10;
+
+        function formatAddress(addr) {
+            if (!addr) return 'Unknown';
+            return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`;
+        }
+
+        function formatAddresses(addresses, type) {
+            if (!addresses || addresses.length === 0) return 'Unknown';
+            const formatted = formatAddress(addresses[0]);
+            const extra = addresses.length > 1 ? ` +${addresses.length - 1}` : '';
+            const addressClass = type === 'sender' ? 'sender' : 'receiver';
+            return `
+                <div class="blockchain-id ${addressClass}">
+                    <a href="/address/${addresses[0]}">${formatted}${extra}</a>
+                    <button class="copy-button" data-clipboard="${addresses[0]}" title="Copy ${type} address">
+                        {{ copy_icon() }}
+                    </button>
+                </div>
+            `;
+        }
+
+        function removeOldTransactions() {
+            const rows = txTable.getElementsByTagName('tr');
+            if (rows.length > maxRows) {
+                const rowsToRemove = Array.from(rows).slice(maxRows);
+                rowsToRemove.forEach(row => {
+                    row.classList.add('removing-transaction');
+                    setTimeout(() => {
+                        if (row.parentNode === txTable) {
+                            txTable.removeChild(row);
+                        }
+                    }, 300);
+                });
+            }
+        }
+
+        function addTransaction(tx) {
+            const row = document.createElement('tr');
+            const amountClass = tx.amount >= 0 ? 'amount-positive' : 'amount-negative';
+
+            row.innerHTML = `
+                <td class="hash-column">
+                    <div class="blockchain-id">
+                        <a href="/tx/${tx.hash}">${tx.hash}</a>
+                        <button class="copy-button" data-clipboard="${tx.hash}" title="Copy transaction hash">
+                            {{ copy_icon() }}
+                        </button>
+                    </div>
+                </td>
+                <td class="amount-column ${amountClass}">${tx.amount.toFixed(8)}</td>
+                <td class="address-column">${formatAddresses(tx.from, 'sender')}</td>
+                <td class="address-column">${formatAddresses(tx.to, 'receiver')}</td>
+            `;
+
+            row.classList.add('new-transaction');
+            txTable.insertBefore(row, txTable.firstChild);
+
+            // Add copy functionality
+            row.querySelectorAll('.copy-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const textToCopy = this.dataset.clipboard;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'copy-tooltip';
+                        tooltip.textContent = 'Copied!';
+                        tooltip.style.top = `${this.getBoundingClientRect().top - 30}px`;
+                        tooltip.style.left = `${this.getBoundingClientRect().left}px`;
+                        document.body.appendChild(tooltip);
+                        setTimeout(() => tooltip.remove(), 1500);
+                    });
+                });
+            });
+
+            // Remove old transactions after animation completes
+            setTimeout(removeOldTransactions, 300);
+        }
+
+        const evtSource = new EventSource('/transactions/stream');
+
+        evtSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.ping) return;
+            addTransaction(data);
+        };
+
+        evtSource.onerror = function() {
+            statusBadge.textContent = 'Disconnected';
+            statusBadge.classList.remove('status-connected');
+            statusBadge.classList.add('status-disconnected');
+        };
+
+        evtSource.onopen = function() {
+            statusBadge.textContent = 'Connected';
+            statusBadge.classList.remove('status-disconnected');
+            statusBadge.classList.add('status-connected');
+        };
+    });
+</script>
+{% endblock %}
