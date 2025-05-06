@@ -82,6 +82,10 @@ pip install -e .
 - `blockExplorer run local`: Run the application locally
 - `blockExplorer run docker`: Run the application using Docker
 
+### Demo
+
+pyExplorer: [Demo](https://pyexplorer.replit.app 'pyExplorer Bitcoin Explorer')
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
