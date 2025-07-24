@@ -51,7 +51,6 @@ class WebSocketManager:
                         'from': [inp.get('prev_out', {}).get('addr') for inp in tx.get('inputs', [])],
                         'to': [out.get('addr') for out in tx.get('out', [])]
                     }
-                    logging.info(f"Received new transaction: {formatted_tx['hash']}")
                     for callback in self.callbacks:
                         callback(formatted_tx)
             except websockets.exceptions.ConnectionClosed:
