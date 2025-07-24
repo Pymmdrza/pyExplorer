@@ -1,5 +1,7 @@
 # Block Explorer (pyExplorer)
 
+[![Python Bitcoin Explorer](https://img.shields.io/badge/PyExplorer-Demo-5bb656?link=https://pyexplorer.mmdrza.com/&style=plastic)](https://pyexplorer.mmdrza.com/ 'pyExplorer - Bitcoin Python Explorer') 
+
 A professional blockchain explorer web application that provides comprehensive insights into blockchain networks, with enhanced data visualization and user interaction capabilities.
 
 ![pyExplorer](https://raw.githubusercontent.com/Pymmdrza/pyExplorer/refs/heads/main/.github/index_screen-optimize.png 'pyExplorer Bitcoin block transaction and address monitoring')
@@ -84,7 +86,7 @@ pip install -e .
 
 ### Demo
 
-pyExplorer: [Demo](https://pyexplorer.replit.app 'pyExplorer Bitcoin Explorer')
+pyExplorer: [Demo](https://pyexplorer.mmdrza.com/ 'pyExplorer Bitcoin Explorer')
 
 ## License
 
