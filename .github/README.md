@@ -1,6 +1,7 @@
 # Block Explorer (pyExplorer)
 
-[![Python Bitcoin Explorer](https://img.shields.io/badge/PyExplorer-Demo-5bb656?link=https://pyexplorer.mmdrza.com/&style=plastic)](https://pyexplorer.mmdrza.com/ 'pyExplorer - Bitcoin Python Explorer') 
+[![Python Bitcoin Explorer](https://img.shields.io/badge/PyExplorer-Demo-F7931A?logo=bitcoin&style=plastic)](https://pyexplorer.mmdrza.com/ 'pyExplorer - Bitcoin Python Explorer')  [![Python Bitcoin Explorer](https://img.shields.io/badge/PyExplorer_(Docker)-Build-2496ED?style=plastic&logo=docker)](https://github.com/Pymmdrza/pyExplorer#docker 'Build Docker pyExplorer - Bitcoin Python Explorer') [![Python Bitcoin Explorer](https://img.shields.io/badge/Features-View-5bb656?style=plastic)](https://github.com/Pymmdrza/pyExplorer#features 'Features pyExplorer Bitcoin Python Explorer') 
+
 
 A professional blockchain explorer web application that provides comprehensive insights into blockchain networks, with enhanced data visualization and user interaction capabilities.
 
