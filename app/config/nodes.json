@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    "https://bitcoin.atomicwallet.io/api/v2",
+    "https://btcbook.guarda.co/api/v2",
+    "https://btc1.trezor.io/api/v2"
+  ],
+  "query": {
+    "address": "address/",
+    "tx": "tx/",
+    "block": "block/",
+    "blockIndex": "block-index/"
+  },
+  "params": {
+    "addr": {
+      "basic": "?details=basic",
+      "txs": "?details=txs",
+      "txsLight": "?details=txslight",
+      "txLight": "?details=txlight"
+    }
+  }
+}

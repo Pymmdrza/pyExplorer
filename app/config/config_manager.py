@@ -51,8 +51,6 @@ class ConfigManager:
             
             config_path = os.path.join(current, 'config.json')
 
-            logging.info(f"Looking for config file at: {config_path}")
-
             if not os.path.exists(config_path):
                 logging.error(f"Config file not found at: {config_path}")
                 raise FileNotFoundError(f"Config file not found at: {config_path}")

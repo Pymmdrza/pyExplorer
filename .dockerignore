@@ -1,7 +1,8 @@
 # Git
 .git
 .gitignore
-
+venv/*
+.idea
 # Python
 __pycache__
 *.pyc
@@ -13,7 +14,6 @@ venv/
 .env
 
 # IDE
-.idea
 .vscode
 *.swp
 *.swo

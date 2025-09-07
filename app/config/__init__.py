@@ -1,3 +1,3 @@
 from .config_manager import config
-
-__all__ = ['config']
+from .node_reader import NodeReader
+__all__ = ['config', 'NodeReader']

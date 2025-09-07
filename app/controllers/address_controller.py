@@ -1,15 +1,26 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 from app.config.config_manager import config
+from app.config.node_reader import NodeReader
 from app.utils.api_client import make_request
+
+nr = NodeReader()
+base_urls = nr.get_nodes() # Get base urls List
+addr_query = nr.get_query('address')
+tx_query = nr.get_query('tx')
+block_query = nr.get_query('block')
+block_index_query = nr.get_query('blockIndex')
+params_basic = nr.get_addr_params('basic')
+params_txs = nr.get_addr_params('txs')
+params_txslight = nr.get_addr_params('txsLight')
+node_url = base_urls[0] # atomic = 0 | guarda = 1 | trezor = 2
+
 
 def get_address_details(address: str, page: int = 1, per_page: int = 10) -> Optional[Dict[str, Any]]:
     """Get address information with transaction details"""
     try:
-        # Get address details with full transactions
-        url = config.get_node_url('address') + address + config.get_node_suffix('address', 'txs')
+        url = f"{node_url}{addr_query}{address}{params_basic}"
         addr = make_request(url)
-
         if not addr:
             return None
 

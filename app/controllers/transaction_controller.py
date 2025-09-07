@@ -1,12 +1,18 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 from app.config.config_manager import config
+from app.config.node_reader import NodeReader
 from app.utils.api_client import make_request
+
+nr = NodeReader()
+nodes = nr.get_nodes()
+tx_query = nr.get_query('tx')
+basic_url = f"{nodes[0]}{tx_query}"
 
 def get_transaction_details(tx_hash: str) -> Optional[Dict[str, Any]]:
     """Get detailed transaction information"""
     try:
-        url = config.get_node_url('tx') + tx_hash
+        url = f"{basic_url}{tx_hash}?page=1"
         tx = make_request(url)
 
         if not tx:
