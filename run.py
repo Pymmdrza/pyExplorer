@@ -17,7 +17,7 @@ def run_websocket():
     asyncio.run(start_websocket())
 
 if __name__ == '__main__':
-    # Start WebSocket connection in a separate thread
+    # Start a WebSocket connection in a separate thread
     websocket_thread = threading.Thread(target=run_websocket, daemon=True)
     websocket_thread.start()
 
