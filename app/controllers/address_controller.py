@@ -19,7 +19,7 @@ node_url = base_urls[0] # atomic = 0 | guarda = 1 | trezor = 2
 def get_address_details(address: str, page: int = 1, per_page: int = 10) -> Optional[Dict[str, Any]]:
     """Get address information with transaction details"""
     try:
-        url = f"{node_url}{addr_query}{address}{params_basic}"
+        url = f"{node_url}{addr_query}{address}{params_txslight}"
         addr = make_request(url)
         if not addr:
             return None
