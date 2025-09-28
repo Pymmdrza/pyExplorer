@@ -195,7 +195,10 @@ def detect_query_type(query):
     query = query.strip().lower()
 
     # Bitcoin address pattern (starts with 1, 3, or bc1)
-    if re.match(r'^(1|3|bc1)[a-zA-Z0-9]{25,39}$', query):
+    # Legacy: 26–35 chars, Bech32: up to 62 chars
+    if re.match(r'^(1|3)[a-zA-Z0-9]{25,39}$', query):
+        return 'address'
+    if re.match(r'^(bc1)[a-z0-9]{11,59}$', query):  # bc1 + 11–59 → From 14 to 62
         return 'address'
 
     # Transaction hash pattern (64 hex characters)
