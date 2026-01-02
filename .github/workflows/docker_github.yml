@@ -38,7 +38,7 @@ jobs:
         with:
           images: |
             pymmdrza/pyexplorer
-            ghcr.io/${{ github.repository_owner }}/pyexplorer
+            ghcr.io/pymmdrza/pyexplorer
 
       # Push and Build
       - name: Build and push Docker image
@@ -48,5 +48,5 @@ jobs:
           push: true
           tags: |
             pymmdrza/pyexplorer:latest
-            ghcr.io/${{ github.repository_owner }}/pyexplorer:latest
+            ghcr.io/pymmdrza/pyexplorer:latest
           labels: ${{ steps.meta.outputs.labels }}
