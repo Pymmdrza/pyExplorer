@@ -1,0 +1,6 @@
+SATOSHI = 100_000_000
+DEFAULT_PAGE_SIZE = 10
+MAX_PAGE_SIZE = 50
+"""Shared numeric constants."""
+
+SATOSHI = 100_000_000

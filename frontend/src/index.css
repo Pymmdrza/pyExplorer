@@ -1,0 +1,70 @@
+:root {
+  color-scheme: dark;
+  --bg: #080b12;
+  --surface: #101622;
+  --surface-muted: #151d2b;
+  --input-bg: #0c111b;
+  --border: rgba(148, 163, 184, 0.16);
+  --border-strong: rgba(226, 232, 240, 0.26);
+  --text: #d4dce8;
+  --text-muted: #8c9bb0;
+  --text-strong: #f8fbff;
+  --accent: #f7931a;
+  --accent-amber: #f59e0b;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.24);
+  --shadow-card: 0 24px 70px rgba(0, 0, 0, 0.28);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% -10%, rgba(247, 147, 26, 0.22), transparent 34rem),
+    radial-gradient(circle at 85% 0%, rgba(59, 130, 246, 0.14), transparent 30rem),
+    linear-gradient(180deg, #080b12 0%, #0b1020 48%, #070a11 100%);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  color: #120a02;
+  background: #f7931a;
+}

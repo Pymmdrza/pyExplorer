@@ -1,18 +1,23 @@
-version: '3.8'
-
 services:
-  web:
-    build: .
-    ports:
-      - "5000:5000"
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - .env
     environment:
-      - FLASK_ENV=production
-      - FLASK_APP=app
-    volumes:
-      - ./config.json:/app/config.json
+      PYEXPLORER_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080
+    ports:
+      - "8000:8000"
     restart: unless-stopped
 
-  # You can add more services here if needed, like:
-  # - Redis for caching
-  # - PostgreSQL for database
-  # - Nginx for reverse proxy
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    restart: unless-stopped

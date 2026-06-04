@@ -3,13 +3,11 @@ import os
 import logging
 from typing import Dict, List, Optional, Any
 
-
 class ConfigException(Exception):
     pass
 
-
 class ConfigManager:
-    
+
     def __init__(self):
         """
         Initialize ConfigManager instance.
@@ -48,7 +46,7 @@ class ConfigManager:
         """
         try:
             current = os.path.dirname(os.path.abspath(__file__))
-            
+
             config_path = os.path.join(current, 'config.json')
 
             if not os.path.exists(config_path):
@@ -72,14 +70,14 @@ class ConfigManager:
         Raises:
             KeyError: If required configuration key is missing
         """
-        
+
         try:
             self.api_nodes = {
                 'atomic': self.config['bitcoin']['node']['api']['atomic'],
                 'guarda': self.config['bitcoin']['node']['api']['guarda'],
                 'trezor': self.config['bitcoin']['node']['api']['trezor']
-            }
-            
+                }
+
             nodes = list(self.api_nodes.keys())
             self.current_node = nodes[0]
             logging.info(f"API nodes initialized, using {self.current_node} as default")
@@ -148,7 +146,7 @@ class ConfigManager:
             return False
 
     def get_blockchain_api(self, endpoint: str) -> str:
-        
+
         """
         Get a full URL for a blockchain API endpoint.
 
@@ -205,19 +203,19 @@ class ConfigManager:
             suffix = node['addr']['suffix'].get(level, '')
             return base_url + suffix
         except KeyError as e:
-            logging.error("Missing configuration for address endpoint or suffix: %s, error: %s", level, str(e)) # Use custom logger
+            logging.error("Missing configuration for address endpoint or suffix: %s, error: %s", level,
+                          str(e))  # Use custom logger
             raise ConfigException(f"Missing configuration for address endpoint or suffix: {str(e)}") from e
         except TypeError as e:
-            logging.error("Configuration structure error for node: %s, error: %s", self.current_node, str(e)) # Use custom logger
+            logging.error("Configuration structure error for node: %s, error: %s", self.current_node,
+                          str(e))  # Use custom logger
             raise ConfigException(f"Configuration structure error for node {self.current_node}: {str(e)}")
-        
- # Configure logging with more detailed format
+
+# Configure logging with more detailed format
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)   
-    
-        
+    format='%(asctime)s - %(message)s'
+    )
 
 # Create global instance
 config = ConfigManager()
