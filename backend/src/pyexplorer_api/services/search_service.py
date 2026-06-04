@@ -12,18 +12,18 @@ def search(query: str) -> SearchResult:
             query=candidate,
             type=query_type,
             api_path=f"/transactions/{candidate.lower()}",
-            frontend_path=f"/tx/{candidate.lower()}",
+            frontend_path=f"/transactions/{candidate.lower()}",
         )
     if query_type == QueryType.ADDRESS:
         return SearchResult(
             query=candidate,
             type=query_type,
             api_path=f"/addresses/{candidate}",
-            frontend_path=f"/address/{candidate}",
+            frontend_path=f"/addresses/{candidate}",
         )
     return SearchResult(
         query=candidate,
         type=query_type,
         api_path=f"/blocks/{int(candidate)}",
-        frontend_path=f"/block/{int(candidate)}",
+        frontend_path=f"/blocks/{int(candidate)}",
     )

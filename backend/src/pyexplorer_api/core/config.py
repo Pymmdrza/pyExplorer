@@ -2,10 +2,10 @@
 
 import json
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class ProviderConfig(BaseModel):
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     environment: str = "local"
     log_level: str = "INFO"
     api_prefix: str = "/api/v1"
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
