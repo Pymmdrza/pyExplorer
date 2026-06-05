@@ -38,7 +38,7 @@ export function useNetworkOverview(): NetworkState {
         if (controller.signal.aborted) {
           return
         }
-        const message = error instanceof Error ? error.message : 'Unable to reach the API.'
+        const message = error instanceof Error ? error.message : 'Unable to reach the data service.'
         setState({ data: fallbackOverview, status: 'offline', error: message })
       })
 

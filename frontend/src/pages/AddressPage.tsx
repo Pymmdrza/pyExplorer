@@ -17,8 +17,7 @@ export function AddressPage() {
       <DetailHeader
         eyebrow="Address detail"
         title={formatHash(address, 16, 16)}
-        description="Review address balances, aggregate flow, and the latest normalized transactions."
-        apiPath={`/addresses/${address}`}
+        description="Review balances, aggregate flow, and the latest activity for this address."
       />
 
       {addressState.loading ? <LoadingPanel label="Loading address…" /> : null}
@@ -55,7 +54,7 @@ export function AddressPage() {
               <MetricCard
                 label="Transactions"
                 value={formatInteger(addressState.data.tx_count)}
-                detail="Provider-reported count"
+                detail="Observed activity count"
                 tone="blue"
               />
             </div>
@@ -102,7 +101,7 @@ export function AddressPage() {
             ) : (
               <div className="empty-state">
                 <strong>No transactions returned.</strong>
-                <span>The upstream provider may not expose transaction history for this address.</span>
+                <span>Transaction history is not currently available for this address.</span>
               </div>
             )}
           </section>

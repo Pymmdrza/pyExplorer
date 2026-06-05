@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { transactionStreamUrl } from '../api/client'
+import { getRecentTransactions, transactionStreamUrl } from '../api/client'
 import type { LiveTransaction } from '../api/types'
 
 type StreamStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'unavailable'
@@ -21,6 +21,20 @@ function supportsEventSource(): boolean {
   return typeof window !== 'undefined' && 'EventSource' in window
 }
 
+function mergeTransactions(
+  incoming: LiveTransaction[],
+  current: LiveTransaction[],
+  limit: number,
+): LiveTransaction[] {
+  const byHash = new Map<string, LiveTransaction>()
+  for (const transaction of [...incoming, ...current]) {
+    if (transaction.hash && !byHash.has(transaction.hash)) {
+      byHash.set(transaction.hash, transaction)
+    }
+  }
+  return [...byHash.values()].slice(0, limit)
+}
+
 export function useTransactionStream(limit = 8): StreamState {
   const [transactions, setTransactions] = useState<LiveTransaction[]>([])
   const [status, setStatus] = useState<StreamStatus>(() =>
@@ -28,8 +42,27 @@ export function useTransactionStream(limit = 8): StreamState {
   )
 
   useEffect(() => {
+    const controller = new AbortController()
+    const pollId = window.setInterval(() => void loadRecent(), 30_000)
+
+    async function loadRecent() {
+      try {
+        const recent = await getRecentTransactions(limit, controller.signal)
+        setTransactions((current) => mergeTransactions(recent, current, limit))
+      } catch {
+        if (!controller.signal.aborted && !supportsEventSource()) {
+          setStatus('unavailable')
+        }
+      }
+    }
+
+    void loadRecent()
+
     if (!supportsEventSource()) {
-      return undefined
+      return () => {
+        controller.abort()
+        window.clearInterval(pollId)
+      }
     }
 
     const source = new EventSource(transactionStreamUrl())
@@ -39,7 +72,7 @@ export function useTransactionStream(limit = 8): StreamState {
     source.onmessage = (event: MessageEvent<string>) => {
       try {
         const payload = JSON.parse(event.data) as LiveTransaction
-        setTransactions((current) => [payload, ...current].slice(0, limit))
+        setTransactions((current) => mergeTransactions([payload], current, limit))
         setStatus('connected')
       } catch {
         setStatus('reconnecting')
@@ -54,7 +87,11 @@ export function useTransactionStream(limit = 8): StreamState {
       }
     })
 
-    return () => source.close()
+    return () => {
+      controller.abort()
+      window.clearInterval(pollId)
+      source.close()
+    }
   }, [limit])
 
   return { transactions, status }

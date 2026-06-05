@@ -42,7 +42,7 @@ def default_blockchain_paths() -> dict[str, str]:
         "blockcount": "q/getblockcount",
         "latest_hash": "q/latesthash",
         "tx_count_24h": "q/24hrtransactioncount",
-        "mempool_size": "q/mempoolsize",
+        "mempool_size": "q/unconfirmedcount",
         "marketcap": "q/marketcap",
         "hash_rate": "q/hashrate",
     }
@@ -80,6 +80,10 @@ class Settings(BaseSettings):
 
     blockchain_stats_url: AnyHttpUrl = "https://api.blockchain.info/stats"
     blockchain_base_url: AnyHttpUrl = "https://blockchain.info/"
+    mempool_stats_url: AnyHttpUrl = "https://mempool.space/api/mempool"
+    unconfirmed_transactions_url: AnyHttpUrl = (
+        "https://blockchain.info/unconfirmed-transactions?format=json"
+    )
     blockchain_paths: dict[str, str] = Field(default_factory=default_blockchain_paths)
     providers: list[ProviderConfig] = Field(default_factory=default_providers)
 

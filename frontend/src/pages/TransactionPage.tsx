@@ -19,8 +19,7 @@ export function TransactionPage() {
       <DetailHeader
         eyebrow="Transaction detail"
         title={formatHash(txHash, 14, 14)}
-        description="Inspect normalized transaction metadata, inputs, outputs, fees, and related block information."
-        apiPath={`/transactions/${txHash}`}
+        description="Review transaction timing, confirmations, inputs, outputs, fees, and related block information."
       />
 
       {transaction.loading ? <LoadingPanel label="Loading transaction…" /> : null}
@@ -114,7 +113,7 @@ function EndpointList({ title, endpoints }: EndpointListProps) {
       ) : (
         <div className="empty-state">
           <strong>No {title.toLowerCase()} found.</strong>
-          <span>The upstream provider did not return endpoint entries for this transaction.</span>
+          <span>The selected data source did not return entries for this transaction.</span>
         </div>
       )}
     </article>

@@ -4,8 +4,14 @@ from pyexplorer_api.clients.blockchain_client import BlockchainClient
 from pyexplorer_api.core.constants import SATOSHI
 from pyexplorer_api.exceptions import NotFoundError
 from pyexplorer_api.schemas.address import AddressResponse, AddressTransaction
+from pyexplorer_api.schemas.common import PaginationMeta
 from pyexplorer_api.services.cache import TTLCache
-from pyexplorer_api.services.mappers import extract_satoshis, parse_timestamp, to_float
+from pyexplorer_api.services.mappers import (
+    extract_satoshis,
+    parse_timestamp,
+    to_float,
+    to_int,
+)
 from pyexplorer_api.utils.pagination import paginate
 from pyexplorer_api.utils.validators import validate_address
 
@@ -22,7 +28,9 @@ class AddressService:
         cache_key = f"address:{validated_address}:page:{page}:per_page:{per_page}"
 
         async def load() -> AddressResponse:
-            raw = await self.client.get_address(validated_address)
+            raw = await self.client.get_address(
+                validated_address, page=page, per_page=per_page
+            )
             if raw is None:
                 raise NotFoundError(
                     "Address not found.", {"address": validated_address}
@@ -36,13 +44,28 @@ class AddressService:
                 self._normalise_address_transaction(tx, validated_address)
                 for tx in all_transactions
             ]
-            paginated, meta = paginate(transactions, page, per_page)
+            tx_count_source = (
+                raw.get("txs") if not isinstance(raw.get("txs"), list) else None
+            )
+            tx_count = to_int(
+                tx_count_source or raw.get("txCount") or len(all_transactions)
+            )
+            if raw.get("page") is not None and raw.get("itemsOnPage") is not None:
+                paginated = transactions[:per_page]
+                meta = PaginationMeta(
+                    current_page=page,
+                    per_page=per_page,
+                    total_items=tx_count,
+                    total_pages=max((tx_count + per_page - 1) // per_page, 1),
+                )
+            else:
+                paginated, meta = paginate(transactions, page, per_page)
             return AddressResponse(
                 address=validated_address,
                 final_balance_btc=to_float(raw.get("balance")) / SATOSHI,
                 total_received_btc=to_float(raw.get("totalReceived")) / SATOSHI,
                 total_sent_btc=to_float(raw.get("totalSent")) / SATOSHI,
-                tx_count=len(all_transactions),
+                tx_count=tx_count,
                 transactions=paginated,
                 pagination=meta,
             )

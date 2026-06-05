@@ -12,6 +12,45 @@ The legacy Flask code is still kept in the repository during migration for rollb
 
 ## Local development
 
+### One-command setup scripts
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\setup.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\dev.ps1
+```
+
+Or double-click/run the wrappers:
+
+```powershell
+.\scripts\windows\setup.cmd
+.\scripts\windows\dev.cmd
+```
+
+Linux/macOS:
+
+```bash
+chmod +x scripts/linux/*.sh
+./scripts/linux/setup.sh
+./scripts/linux/dev.sh
+```
+
+After startup:
+
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:8000/api/v1/health`
+
+Stop local dev servers:
+
+```powershell
+.\scripts\windows\stop.cmd
+```
+
+```bash
+./scripts/linux/stop.sh
+```
+
 ### Backend
 
 ```powershell
@@ -40,10 +79,30 @@ Vite proxies `/api/*` to `http://127.0.0.1:8000`.
 docker compose up --build
 ```
 
+Script alternatives:
+
+```powershell
+.\scripts\windows\docker-up.cmd
+```
+
+```bash
+./scripts/linux/docker-up.sh
+```
+
 - Web UI: `http://localhost:8080`
 - API: `http://localhost:8000/api/v1`
 
 ## Quality gates
+
+Run all checks with scripts:
+
+```powershell
+.\scripts\windows\test.cmd
+```
+
+```bash
+./scripts/linux/test.sh
+```
 
 ### Backend
 

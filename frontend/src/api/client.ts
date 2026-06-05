@@ -2,6 +2,7 @@ import type {
   AddressResponse,
   ApiErrorBody,
   BlockResponse,
+  LiveTransaction,
   NetworkOverview,
   SearchResult,
   TransactionResponse,
@@ -84,10 +85,9 @@ export function transactionStreamUrl(): string {
   return `${API_BASE_URL}/stream/transactions`
 }
 
-export function absoluteApiUrl(apiPath: string): string {
-  const normalizedPath = apiPath.startsWith('/') ? apiPath : `/${apiPath}`
-  if (/^https?:\/\//i.test(API_BASE_URL)) {
-    return `${API_BASE_URL}${normalizedPath}`
-  }
-  return `${window.location.origin}${API_BASE_URL}${normalizedPath}`
+export function getRecentTransactions(
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<LiveTransaction[]> {
+  return request<LiveTransaction[]>(`/network/mempool/recent?limit=${limit}`, signal)
 }

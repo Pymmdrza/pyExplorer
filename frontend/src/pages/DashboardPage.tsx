@@ -34,10 +34,10 @@ export function DashboardPage() {
               {network.status}
             </span>
           </div>
-          <h2 id="status-title">Local/demo API is wired for live Bitcoin data.</h2>
+          <h2 id="status-title">Explorer service is ready for live Bitcoin data.</h2>
           <p>
-            Backend responses are normalized through FastAPI schemas and protected with provider
-            retry/fallback plus short-lived TTL cache.
+            Records are checked across configured data sources and cached briefly for a faster,
+            consistent experience.
           </p>
           <dl className="status-list">
             <div>
@@ -45,12 +45,12 @@ export function DashboardPage() {
               <dd>{formatIsoDate(overview.updated_at)}</dd>
             </div>
             <div>
-              <dt>Realtime stream</dt>
+              <dt>Live feed</dt>
               <dd>{live.status}</dd>
             </div>
             <div>
-              <dt>Providers</dt>
-              <dd>{overview.providers.length || 'Waiting for API'}</dd>
+              <dt>Data sources</dt>
+              <dd>{overview.providers.length || 'Unavailable'}</dd>
             </div>
           </dl>
           {network.error ? <p className="inline-alert">{network.error}</p> : null}
@@ -63,7 +63,7 @@ export function DashboardPage() {
             <p className="eyebrow">Network overview</p>
             <h2 id="metrics-title">Key Bitcoin metrics</h2>
           </div>
-          <span className="muted">Source: blockchain.info + provider fallback</span>
+          <span className="muted">Updated from connected market and network sources</span>
         </div>
         <div className="metrics-grid">
           <MetricCard
@@ -88,6 +88,30 @@ export function DashboardPage() {
             label="Difficulty"
             value={formatCompactNumber(overview.difficulty)}
             detail="Mining difficulty target"
+            tone="violet"
+          />
+          <MetricCard
+            label="Mempool"
+            value={formatCompactNumber(overview.mempool_size)}
+            detail="Unconfirmed transactions"
+            tone="blue"
+          />
+          <MetricCard
+            label="Hash rate"
+            value={formatCompactNumber(overview.hash_rate)}
+            detail="Estimated network hash rate"
+            tone="green"
+          />
+          <MetricCard
+            label="Block interval"
+            value={`${overview.minutes_between_blocks.toFixed(1)} min`}
+            detail="Average minutes between blocks"
+            tone="amber"
+          />
+          <MetricCard
+            label="Daily fees"
+            value={formatBitcoin(overview.total_fees_btc)}
+            detail="Fees recorded in the latest stats window"
             tone="violet"
           />
         </div>
@@ -120,7 +144,7 @@ export function DashboardPage() {
             ) : (
               <div className="empty-state">
                 <strong>Waiting for the first mempool event…</strong>
-                <span>Start the FastAPI backend to stream unconfirmed transactions here.</span>
+                <span>Start the local data service to show unconfirmed transactions here.</span>
               </div>
             )}
           </div>
@@ -144,7 +168,7 @@ export function DashboardPage() {
             ) : (
               <div className="empty-state">
                 <strong>No block height yet.</strong>
-                <span>Network overview will populate this once the backend is reachable.</span>
+                <span>Network overview will populate this once the data service is reachable.</span>
               </div>
             )}
           </div>
@@ -154,10 +178,10 @@ export function DashboardPage() {
       <section id="providers" className="section-card" aria-labelledby="providers-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Provider health</p>
-            <h2 id="providers-title">Fallback-ready external APIs</h2>
+            <p className="eyebrow">Data source health</p>
+            <h2 id="providers-title">Connected source status</h2>
           </div>
-          <span className="muted">Atomic, Guarda, and Trezor compatible endpoints</span>
+          <span className="muted">Configured network sources</span>
         </div>
         <div className="provider-grid">
           {overview.providers.length ? (
@@ -166,15 +190,15 @@ export function DashboardPage() {
                 <span className="provider-card__dot" aria-hidden="true" />
                 <div>
                   <strong>{provider.name}</strong>
-                  <small>{provider.base_url}</small>
+                  <small>Operational source</small>
                 </div>
                 <span>{provider.status}</span>
               </article>
             ))
           ) : (
             <div className="empty-state">
-              <strong>Providers are configured in the backend.</strong>
-              <span>Run the API and this panel will show active provider metadata.</span>
+              <strong>Data sources are configured in the service.</strong>
+              <span>Once the service is running, this panel will show source availability.</span>
             </div>
           )}
         </div>

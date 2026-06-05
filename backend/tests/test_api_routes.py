@@ -148,6 +148,22 @@ def test_network_overview_uses_mocked_stats(api_client: TestClient) -> None:
     ]
 
 
+def test_recent_mempool_transactions_are_normalized(api_client: TestClient) -> None:
+    response = api_client.get("/api/v1/network/mempool/recent", params={"limit": 1})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload == [
+        {
+            "hash": "d" * 64,
+            "time": 1_710_000_400,
+            "amount_btc": 0.00042,
+            "from_addresses": ["bc1qliveinput"],
+            "to_addresses": ["bc1qliveoutput"],
+        }
+    ]
+
+
 def test_transaction_export_json_and_csv(api_client: TestClient) -> None:
     json_response = api_client.get(f"/api/v1/exports/transactions/{TEST_TX_HASH}.json")
     assert json_response.status_code == 200

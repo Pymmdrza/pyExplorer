@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+
 from pyexplorer_api.api.dependencies import (
     get_blockchain_client,
     get_cache,
@@ -89,6 +90,17 @@ class FakeBlockchainClient:
             "n_blocks_mined": 144,
             "minutes_between_blocks": 9.8,
         }
+        self.mempool_stats_payload = {"count": 12_345}
+        self.unconfirmed_payload = {
+            "txs": [
+                {
+                    "hash": "d" * 64,
+                    "time": 1_710_000_400,
+                    "inputs": [{"prev_out": {"addr": "bc1qliveinput"}}],
+                    "out": [{"addr": "bc1qliveoutput", "value": 42_000}],
+                }
+            ]
+        }
         self.text_payloads = {
             settings.blockchain_url("difficulty"): "86388558925171",
             settings.blockchain_url("tx_count_24h"): "412345",
@@ -100,8 +112,13 @@ class FakeBlockchainClient:
         return self.transactions.get(tx_hash)
 
     async def get_address(
-        self, address: str, detail_level: str = "txslight"
+        self,
+        address: str,
+        detail_level: str = "txslight",
+        page: int | None = None,
+        per_page: int | None = None,
     ) -> dict[str, Any] | None:
+        _ = page, per_page
         _ = detail_level
         return self.addresses.get(address)
 
@@ -109,7 +126,10 @@ class FakeBlockchainClient:
         return self.blocks.get(int(height))
 
     async def get_json_url(self, url: str) -> dict[str, Any] | None:
-        _ = url
+        if url == str(self.settings.mempool_stats_url):
+            return self.mempool_stats_payload
+        if url == str(self.settings.unconfirmed_transactions_url):
+            return self.unconfirmed_payload
         return self.stats_payload
 
     async def get_text_url(self, url: str) -> str | None:

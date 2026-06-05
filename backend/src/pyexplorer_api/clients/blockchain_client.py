@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from typing import Any, Literal
+from urllib.parse import parse_qsl, urlencode
 
 import httpx
 
@@ -33,9 +34,20 @@ class BlockchainClient:
         return await self.get_provider_resource("tx", tx_hash, suffix="?page=1")
 
     async def get_address(
-        self, address: str, detail_level: str = "txslight"
+        self,
+        address: str,
+        detail_level: str = "txslight",
+        page: int | None = None,
+        per_page: int | None = None,
     ) -> dict[str, Any] | None:
         suffix = self.settings.providers[0].address_suffixes.get(detail_level, "")
+        suffix = self._merge_query_suffix(
+            suffix,
+            {
+                "page": page,
+                "pageSize": per_page,
+            },
+        )
         return await self.get_provider_resource("address", address, suffix=suffix)
 
     async def get_block(self, height: int | str) -> dict[str, Any] | None:
@@ -142,3 +154,12 @@ class BlockchainClient:
 
     async def _sleep_before_retry(self, attempt: int) -> None:
         await asyncio.sleep(self.settings.retry_backoff_seconds * attempt)
+
+    def _merge_query_suffix(self, suffix: str, params: dict[str, Any]) -> str:
+        query = dict(parse_qsl(suffix[1:] if suffix.startswith("?") else suffix))
+        for key, value in params.items():
+            if value is not None:
+                query[key] = str(value)
+        if not query:
+            return ""
+        return f"?{urlencode(query)}"

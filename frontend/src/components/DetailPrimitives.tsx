@@ -1,12 +1,9 @@
 import { Link } from 'react-router-dom'
 
-import { absoluteApiUrl } from '../api/client'
-
 interface DetailHeaderProps {
   eyebrow: string
   title: string
   description: string
-  apiPath?: string
 }
 
 interface KeyValueProps {
@@ -14,7 +11,7 @@ interface KeyValueProps {
   value: string | number | null | undefined
 }
 
-export function DetailHeader({ eyebrow, title, description, apiPath }: DetailHeaderProps) {
+export function DetailHeader({ eyebrow, title, description }: DetailHeaderProps) {
   return (
     <section className="detail-hero">
       <Link className="back-link" to="/">
@@ -23,11 +20,6 @@ export function DetailHeader({ eyebrow, title, description, apiPath }: DetailHea
       <p className="eyebrow">{eyebrow}</p>
       <h1>{title}</h1>
       <p className="hero-copy">{description}</p>
-      {apiPath ? (
-        <a className="pill-link" href={absoluteApiUrl(apiPath)} target="_blank" rel="noreferrer">
-          Open API payload
-        </a>
-      ) : null}
     </section>
   )
 }
@@ -36,7 +28,7 @@ export function LoadingPanel({ label = 'Loading explorer data…' }: { label?: s
   return (
     <div className="section-card empty-state" role="status">
       <strong>{label}</strong>
-      <span>Fetching normalized data from the FastAPI backend.</span>
+      <span>Retrieving the latest explorer data.</span>
     </div>
   )
 }

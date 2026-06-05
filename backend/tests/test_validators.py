@@ -1,4 +1,5 @@
 import pytest
+
 from pyexplorer_api.exceptions import BadRequestError
 from pyexplorer_api.schemas.search import QueryType
 from pyexplorer_api.utils.validators import (

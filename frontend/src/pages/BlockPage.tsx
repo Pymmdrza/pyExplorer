@@ -17,8 +17,7 @@ export function BlockPage() {
       <DetailHeader
         eyebrow="Block detail"
         title={`Block #${height}`}
-        description="Inspect block metadata, mining context, pagination, and normalized transaction summaries."
-        apiPath={`/blocks/${height}`}
+        description="Inspect block metadata, mining context, and transaction summaries."
       />
 
       {block.loading ? <LoadingPanel label="Loading block…" /> : null}
@@ -43,7 +42,7 @@ export function BlockPage() {
               <MetricCard
                 label="Transactions"
                 value={formatInteger(block.data.tx_count)}
-                detail="Provider-reported count"
+                detail="Recorded in this block"
                 tone="blue"
               />
               <MetricCard
@@ -118,7 +117,7 @@ export function BlockPage() {
             ) : (
               <div className="empty-state">
                 <strong>No transactions returned.</strong>
-                <span>The upstream provider returned block metadata without transaction rows.</span>
+                <span>Block metadata is available, but transaction rows were not returned.</span>
               </div>
             )}
           </section>
