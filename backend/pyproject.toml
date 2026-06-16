@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.115.14",
     "httpx==0.28.1",
-    "orjson==3.10.18",
+    "orjson==3.11.6",
     "pydantic==2.11.7",
     "pydantic-settings==2.10.1",
     "python-dotenv==1.2.2",
