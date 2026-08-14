@@ -23,6 +23,14 @@ jobs:
             echo 'Disallowed clean-install command found.' >&2
             exit 1
           fi
+          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.pyexplorer-runtime '@fontsource/' frontend; then
+            echo 'Font package dependencies are not allowed; fonts must load through Google Fonts.' >&2
+            exit 1
+          fi
+          grep -Fq 'https://fonts.googleapis.com' frontend/index.html
+          grep -Fq 'https://fonts.gstatic.com' frontend/index.html
+          grep -Fq 'family=IBM+Plex+Mono' frontend/index.html
+          grep -Fq 'family=IBM+Plex+Sans' frontend/index.html
       - name: Validate dependency policy on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -37,6 +45,19 @@ jobs:
           if ($offenders) {
             $offenders | ForEach-Object { Write-Error $_.Path }
             throw 'Disallowed clean-install command found.'
+          }
+          $fontPackages = Get-ChildItem frontend -Recurse -File |
+            Where-Object { $_.FullName -notmatch '[\\/]node_modules[\\/]' } |
+            Select-String -SimpleMatch '@fontsource/'
+          if ($fontPackages) {
+            $fontPackages | ForEach-Object { Write-Error $_.Path }
+            throw 'Font package dependencies are not allowed.'
+          }
+          $index = Get-Content frontend/index.html -Raw
+          foreach ($required in @('https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'family=IBM+Plex+Mono', 'family=IBM+Plex+Sans')) {
+            if (-not $index.Contains($required)) {
+              throw "Missing required Google Fonts declaration: $required"
+            }
           }
       - name: Validate POSIX installers
         if: runner.os != 'Windows'
