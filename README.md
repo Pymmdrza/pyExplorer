@@ -131,7 +131,7 @@ For environments where runtime management is handled externally, install the bac
 ```bash
 python -m pip install -e ./backend
 cd frontend
-npm install
+npm install --no-audit --no-fund --package-lock=false
 npm run build
 cd ..
 python run.py
@@ -228,7 +228,3 @@ run.py            Cross-platform Uvicorn launcher
 Dockerfile        Optional container build
 .github/workflows Continuous integration
 ```
-
-## License
-
-This project is distributed under the terms in [LICENSE](LICENSE).
