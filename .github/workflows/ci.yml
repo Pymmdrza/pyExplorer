@@ -23,7 +23,8 @@ jobs:
             echo 'Disallowed clean-install command found.' >&2
             exit 1
           fi
-          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.pyexplorer-runtime '@fontsource/' frontend; then
+          font_package="$(printf '@%s/' 'fontsource')"
+          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.pyexplorer-runtime "$font_package" frontend; then
             echo 'Font package dependencies are not allowed; fonts must load through Google Fonts.' >&2
             exit 1
           fi
@@ -46,9 +47,10 @@ jobs:
             $offenders | ForEach-Object { Write-Error $_.Path }
             throw 'Disallowed clean-install command found.'
           }
+          $fontPackageNeedle = '@' + 'fontsource/'
           $fontPackages = Get-ChildItem frontend -Recurse -File |
             Where-Object { $_.FullName -notmatch '[\\/]node_modules[\\/]' } |
-            Select-String -SimpleMatch '@fontsource/'
+            Select-String -SimpleMatch $fontPackageNeedle
           if ($fontPackages) {
             $fontPackages | ForEach-Object { Write-Error $_.Path }
             throw 'Font package dependencies are not allowed.'
