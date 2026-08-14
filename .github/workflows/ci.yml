@@ -20,10 +20,24 @@ jobs:
         shell: bash
         run: |
           test ! -f frontend/package-lock.json
-          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules 'npm ci' .; then
-            echo 'npm ci must not be used by pyExplorer bootstrap paths.' >&2
-            exit 1
-          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          needle = "npm " + "ci"
+          ignored = {'.git', 'node_modules', '.pyexplorer-runtime'}
+          offenders = []
+          for path in Path('.').rglob('*'):
+              if not path.is_file() or any(part in ignored for part in path.parts):
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except (UnicodeDecodeError, OSError):
+                  continue
+              if needle in text:
+                  offenders.append(str(path))
+          if offenders:
+              raise SystemExit('Disallowed clean-install command found in: ' + ', '.join(offenders))
+          PY
       - name: Validate POSIX installers
         if: runner.os != 'Windows'
         shell: bash
