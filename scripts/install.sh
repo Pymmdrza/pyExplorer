@@ -23,21 +23,12 @@ INSTALL_LAUNCHER=1
 IN_PLACE=0
 TEMP_DIR=""
 
-say() {
-  printf '%s\n' "$*"
-}
-
-fail() {
-  printf 'pyExplorer installer: %s\n' "$*" >&2
-  exit 1
-}
+say() { printf '%s\n' "$*"; }
+fail() { printf 'pyExplorer installer: %s\n' "$*" >&2; exit 1; }
 
 cleanup() {
-  if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-    rm -rf "$TEMP_DIR"
-  fi
+  [ -z "$TEMP_DIR" ] || [ ! -d "$TEMP_DIR" ] || rm -rf "$TEMP_DIR"
 }
-
 trap cleanup EXIT HUP INT TERM
 
 usage() {
@@ -45,66 +36,31 @@ usage() {
 Usage: install.sh [options]
 
 Options:
-  --no-start       Install or update without starting the application.
+  --no-start       Install or update without starting pyExplorer.
   --no-launcher    Do not install the user-level pyexplorer command.
-  --port PORT      Use a different port when starting after installation.
-  --source PATH    Install from an existing source tree instead of downloading GitHub.
-  --in-place       Build the supplied source tree in place. Requires --source.
+  --port PORT      Start on a different port. Default: 8000.
+  --source PATH    Use an existing source tree.
+  --in-place       Build the source tree in place. Requires --source.
   --help           Show this help text.
-
-Environment:
-  PYEXPLORER_HOME             Installation root.
-  PYEXPLORER_BIN_DIR          Directory for the pyexplorer launcher.
-  PYEXPLORER_BRANCH           Git branch to install. Defaults to main.
-  PYEXPLORER_PORT             Server port. Defaults to 8000.
-  PYEXPLORER_PYTHON_VERSION   Managed Python version. Defaults to 3.12.
-  PYEXPLORER_NODE_CHANNEL     Managed Node.js major channel. Defaults to 22.
 USAGE
 }
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --no-start)
-      START_AFTER_INSTALL=0
-      shift
-      ;;
-    --no-launcher)
-      INSTALL_LAUNCHER=0
-      shift
-      ;;
-    --port)
-      [ "$#" -ge 2 ] || fail "--port requires a value."
-      PORT="$2"
-      shift 2
-      ;;
-    --source)
-      [ "$#" -ge 2 ] || fail "--source requires a path."
-      SOURCE_DIR="$2"
-      shift 2
-      ;;
-    --in-place)
-      IN_PLACE=1
-      shift
-      ;;
-    --help|-h)
-      usage
-      exit 0
-      ;;
-    *)
-      fail "Unknown option: $1"
-      ;;
+    --no-start) START_AFTER_INSTALL=0; shift ;;
+    --no-launcher) INSTALL_LAUNCHER=0; shift ;;
+    --port) [ "$#" -ge 2 ] || fail "--port requires a value."; PORT="$2"; shift 2 ;;
+    --source) [ "$#" -ge 2 ] || fail "--source requires a path."; SOURCE_DIR="$2"; shift 2 ;;
+    --in-place) IN_PLACE=1; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) fail "Unknown option: $1" ;;
   esac
 done
-
-if [ "$IN_PLACE" -eq 1 ]; then
-  [ -n "$SOURCE_DIR" ] || fail "--in-place requires --source PATH."
-  APP_DIR="$(cd "$SOURCE_DIR" && pwd)"
-fi
 
 case "$(uname -s 2>/dev/null || printf unknown)" in
   Linux) PLATFORM="linux" ;;
   Darwin) PLATFORM="darwin" ;;
-  *) fail "This installer supports Linux, macOS, and WSL. Use scripts/install.ps1 on Windows." ;;
+  *) fail "Use scripts/install.ps1 on Windows." ;;
 esac
 
 case "$(uname -m 2>/dev/null || printf unknown)" in
@@ -113,16 +69,19 @@ case "$(uname -m 2>/dev/null || printf unknown)" in
   *) fail "Unsupported CPU architecture: $(uname -m 2>/dev/null || printf unknown)" ;;
 esac
 
-command -v curl >/dev/null 2>&1 || fail "curl is required to run the installer."
-command -v tar >/dev/null 2>&1 || fail "tar is required to unpack the application."
+command -v curl >/dev/null 2>&1 || fail "curl is required."
+command -v tar >/dev/null 2>&1 || fail "tar is required."
+
+if [ "$IN_PLACE" -eq 1 ]; then
+  [ -n "$SOURCE_DIR" ] || fail "--in-place requires --source PATH."
+  APP_DIR="$(cd "$SOURCE_DIR" && pwd)"
+fi
 
 mkdir -p "$INSTALL_ROOT" "$RUNTIME_DIR" "$CACHE_DIR"
+TEMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t pyexplorer)"
 
 stop_existing_process() {
-  if [ ! -f "$PID_FILE" ]; then
-    return
-  fi
-
+  [ -f "$PID_FILE" ] || return 0
   pid="$(cat "$PID_FILE" 2>/dev/null || true)"
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
     say "Stopping the existing pyExplorer process..."
@@ -132,21 +91,29 @@ stop_existing_process() {
       sleep 0.2
       attempts=$((attempts + 1))
     done
-    if kill -0 "$pid" 2>/dev/null; then
-      kill -9 "$pid" 2>/dev/null || true
-    fi
+    kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
   fi
   rm -f "$PID_FILE"
 }
 
-copy_source_tree() {
-  source_path="$1"
-  [ -f "$source_path/run.py" ] || fail "The source directory does not contain run.py."
-  [ -d "$source_path/backend" ] || fail "The source directory does not contain backend/."
-  [ -d "$source_path/frontend" ] || fail "The source directory does not contain frontend/."
-
-  if [ "$(cd "$source_path" && pwd)" = "$(cd "$APP_DIR" 2>/dev/null && pwd || printf __missing__)" ]; then
-    return
+install_source() {
+  if [ -n "$SOURCE_DIR" ]; then
+    source_path="$(cd "$SOURCE_DIR" && pwd)"
+    [ -f "$source_path/run.py" ] || fail "The source directory is not a pyExplorer checkout."
+    if [ "$source_path" = "$APP_DIR" ]; then
+      return 0
+    fi
+  else
+    archive="$TEMP_DIR/source.tar.gz"
+    extract_dir="$TEMP_DIR/source"
+    mkdir -p "$extract_dir"
+    say "Downloading pyExplorer..."
+    curl -fsSL --retry 3 --retry-delay 1 \
+      "https://codeload.github.com/$REPOSITORY/tar.gz/refs/heads/$BRANCH" \
+      -o "$archive" || fail "Could not download pyExplorer."
+    tar -xzf "$archive" -C "$extract_dir"
+    source_path="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+    [ -n "$source_path" ] || fail "The downloaded archive is invalid."
   fi
 
   saved_env=""
@@ -157,27 +124,11 @@ copy_source_tree() {
 
   rm -rf "$APP_DIR"
   mkdir -p "$APP_DIR"
-  (cd "$source_path" && tar -cf - --exclude='./.git' --exclude='./node_modules' --exclude='./.venv' .) | (cd "$APP_DIR" && tar -xf -)
+  (cd "$source_path" && tar -cf - --exclude='./.git' --exclude='./node_modules' --exclude='./.pyexplorer-runtime' .) | (cd "$APP_DIR" && tar -xf -)
 
   if [ -n "$saved_env" ] && [ -f "$saved_env" ]; then
     cp "$saved_env" "$APP_DIR/.env"
   fi
-}
-
-download_source_tree() {
-  archive="$TEMP_DIR/source.tar.gz"
-  extract_dir="$TEMP_DIR/source"
-  mkdir -p "$extract_dir"
-
-  say "Downloading pyExplorer..."
-  curl -fsSL --retry 3 --retry-delay 1 \
-    "https://codeload.github.com/$REPOSITORY/tar.gz/refs/heads/$BRANCH" \
-    -o "$archive"
-  tar -xzf "$archive" -C "$extract_dir"
-
-  source_path="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-  [ -n "$source_path" ] || fail "Downloaded archive did not contain the application source."
-  copy_source_tree "$source_path"
 }
 
 ensure_uv() {
@@ -187,16 +138,15 @@ ensure_uv() {
   fi
 
   mkdir -p "$UV_DIR"
-  say "Installing the private Python runtime manager..."
+  say "Preparing the Python runtime manager..."
   curl -LsSf --retry 3 https://astral.sh/uv/install.sh | \
     env UV_INSTALL_DIR="$UV_DIR" UV_NO_MODIFY_PATH=1 sh
   UV_BIN="$UV_DIR/uv"
-  [ -x "$UV_BIN" ] || fail "uv installation did not produce an executable."
+  [ -x "$UV_BIN" ] || fail "Could not install the Python runtime manager."
 }
 
-python_is_supported() {
-  python_cmd="$1"
-  "$python_cmd" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' >/dev/null 2>&1
+python_supported() {
+  "$1" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' >/dev/null 2>&1
 }
 
 ensure_python() {
@@ -205,49 +155,38 @@ ensure_python() {
   mkdir -p "$PYTHON_DIR" "$UV_CACHE_DIR"
 
   python_spec=""
-  if command -v python3 >/dev/null 2>&1 && python_is_supported "$(command -v python3)"; then
+  if command -v python3 >/dev/null 2>&1 && python_supported "$(command -v python3)"; then
     python_spec="$(command -v python3)"
-  elif command -v python >/dev/null 2>&1 && python_is_supported "$(command -v python)"; then
+  elif command -v python >/dev/null 2>&1 && python_supported "$(command -v python)"; then
     python_spec="$(command -v python)"
   else
     say "Preparing managed Python $PYTHON_VERSION..."
-    "$UV_BIN" python install "$PYTHON_VERSION" >/dev/null
+    "$UV_BIN" python install "$PYTHON_VERSION" >/dev/null || fail "Could not install Python $PYTHON_VERSION."
     python_spec="$PYTHON_VERSION"
   fi
 
-  if [ ! -x "$VENV_DIR/bin/python" ] || ! python_is_supported "$VENV_DIR/bin/python"; then
+  if [ ! -x "$VENV_DIR/bin/python" ] || ! python_supported "$VENV_DIR/bin/python"; then
     rm -rf "$VENV_DIR"
-    "$UV_BIN" venv --python "$python_spec" "$VENV_DIR" >/dev/null
+    "$UV_BIN" venv --python "$python_spec" "$VENV_DIR" >/dev/null || fail "Could not create the Python environment."
   fi
 
   say "Installing backend dependencies..."
-  "$UV_BIN" pip install --python "$VENV_DIR/bin/python" --upgrade -e "$APP_DIR/backend"
+  "$UV_BIN" pip install --python "$VENV_DIR/bin/python" --upgrade -e "$APP_DIR/backend" || \
+    fail "Backend dependency installation failed."
 }
 
-node_version_is_supported() {
-  node_cmd="$1"
-  version="$($node_cmd -p 'process.versions.node' 2>/dev/null || true)"
-  [ -n "$version" ] || return 1
-  major="${version%%.*}"
-  remainder="${version#*.}"
-  minor="${remainder%%.*}"
-  case "$major:$minor" in
-    *[!0-9:]*|:*) return 1 ;;
-  esac
-  if [ "$major" -gt 22 ]; then return 0; fi
-  if [ "$major" -eq 22 ] && [ "$minor" -ge 12 ]; then return 0; fi
-  if [ "$major" -eq 20 ] && [ "$minor" -ge 19 ]; then return 0; fi
-  return 1
+node_supported() {
+  "$1" -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(((a===20&&b>=19)||(a===22&&b>=12)||a>22)?0:1)' >/dev/null 2>&1
 }
 
 ensure_node() {
-  if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 && node_version_is_supported "$(command -v node)"; then
+  if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 && node_supported "$(command -v node)"; then
     NODE_BIN_DIR="$(dirname "$(command -v node)")"
     NPM_BIN="$(command -v npm)"
     return
   fi
 
-  if [ -x "$NODE_DIR/bin/node" ] && node_version_is_supported "$NODE_DIR/bin/node"; then
+  if [ -x "$NODE_DIR/bin/node" ] && node_supported "$NODE_DIR/bin/node"; then
     NODE_BIN_DIR="$NODE_DIR/bin"
     NPM_BIN="$NODE_DIR/bin/npm"
     return
@@ -261,40 +200,57 @@ ensure_node() {
   node_file="$(printf '%s\n' "$checksums" | awk -v platform="$PLATFORM" -v arch="$ARCH" '
     $2 ~ ("^node-v[0-9.]+-" platform "-" arch "\\.tar\\.gz$") { print $2; exit }
   ')"
-  [ -n "$node_file" ] || fail "Could not resolve a Node.js build for ${PLATFORM}-${ARCH} from the release manifest."
+  [ -n "$node_file" ] || fail "Could not resolve a Node.js build for ${PLATFORM}-${ARCH}."
+  expected="$(printf '%s\n' "$checksums" | awk -v file="$node_file" '$2 == file { print $1; exit }')"
+  [ -n "$expected" ] || fail "Could not resolve the Node.js checksum."
 
-  expected_checksum="$(printf '%s\n' "$checksums" | awk -v file="$node_file" '$2 == file { print $1; exit }')"
-  [ -n "$expected_checksum" ] || fail "Could not resolve the Node.js archive checksum."
+  archive="$TEMP_DIR/$node_file"
+  extract_dir="$TEMP_DIR/node"
+  mkdir -p "$extract_dir"
+  curl -fsSL --retry 3 --retry-delay 1 "$index_url$node_file" -o "$archive" || \
+    fail "Could not download the Node.js runtime."
 
-  node_archive="$TEMP_DIR/$node_file"
-  node_extract="$TEMP_DIR/node"
-  mkdir -p "$node_extract"
-  curl -fsSL --retry 3 --retry-delay 1 "$index_url$node_file" -o "$node_archive" || \
-    fail "Could not download the Node.js runtime archive."
   if command -v sha256sum >/dev/null 2>&1; then
-    actual_checksum="$(sha256sum "$node_archive" | awk '{print $1}')"
+    actual="$(sha256sum "$archive" | awk '{print $1}')"
   elif command -v shasum >/dev/null 2>&1; then
-    actual_checksum="$(shasum -a 256 "$node_archive" | awk '{print $1}')"
+    actual="$(shasum -a 256 "$archive" | awk '{print $1}')"
   else
-    fail "A SHA-256 utility is required to verify the Node.js runtime archive."
+    fail "A SHA-256 utility is required."
   fi
-  [ "$expected_checksum" = "$actual_checksum" ] || fail "Node.js archive checksum verification failed."
+  [ "$expected" = "$actual" ] || fail "Node.js checksum verification failed."
 
-  tar -xzf "$node_archive" -C "$node_extract"
-  node_source="$(find "$node_extract" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-  [ -n "$node_source" ] || fail "Node.js archive did not contain an executable runtime."
-
+  tar -xzf "$archive" -C "$extract_dir"
+  node_source="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+  [ -n "$node_source" ] || fail "The Node.js archive is invalid."
   rm -rf "$NODE_DIR"
   mv "$node_source" "$NODE_DIR"
   NODE_BIN_DIR="$NODE_DIR/bin"
   NPM_BIN="$NODE_DIR/bin/npm"
 }
 
+install_frontend_dependencies() {
+  export NPM_CONFIG_AUDIT=false
+  export NPM_CONFIG_FUND=false
+  export NPM_CONFIG_UPDATE_NOTIFIER=false
+  say "Installing frontend dependencies..."
+
+  if PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" --prefix "$APP_DIR/frontend" install \
+      --no-audit --no-fund --package-lock=false --progress=false --prefer-online --fetch-retries=3; then
+    return 0
+  fi
+
+  say "Retrying frontend dependency installation..."
+  PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" cache verify >/dev/null 2>&1 || true
+  PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" --prefix "$APP_DIR/frontend" install \
+    --no-audit --no-fund --package-lock=false --progress=false --prefer-online --fetch-retries=3 || \
+    fail "Frontend dependency installation failed."
+}
+
 build_frontend() {
-  say "Installing locked frontend dependencies..."
-  PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" --prefix "$APP_DIR/frontend" ci --no-audit --no-fund
+  install_frontend_dependencies
   say "Building the web interface..."
-  PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" --prefix "$APP_DIR/frontend" run build
+  PATH="$NODE_BIN_DIR:$PATH" "$NPM_BIN" --prefix "$APP_DIR/frontend" run build || \
+    fail "Frontend build failed."
   [ -f "$APP_DIR/frontend/dist/index.html" ] || fail "Frontend build did not produce dist/index.html."
 }
 
@@ -305,7 +261,7 @@ ensure_configuration() {
 }
 
 install_launcher() {
-  [ "$INSTALL_LAUNCHER" -eq 1 ] || return
+  [ "$INSTALL_LAUNCHER" -eq 1 ] || return 0
   mkdir -p "$BIN_DIR"
   launcher="$BIN_DIR/pyexplorer"
 
@@ -314,13 +270,12 @@ install_launcher() {
 set -eu
 APP_DIR='$APP_DIR'
 PYTHON='$VENV_DIR/bin/python'
-RUNTIME_DIR='$RUNTIME_DIR'
 PID_FILE='$PID_FILE'
 LOG_FILE='$LOG_FILE'
 DEFAULT_PORT='$PORT'
-
+RAW_INSTALLER='https://raw.githubusercontent.com/$REPOSITORY/main/scripts/install.sh'
 command_name="\${1:-start}"
-if [ "\$#" -gt 0 ]; then shift; fi
+[ "\$#" -eq 0 ] || shift
 port="\${PYEXPLORER_PORT:-\$DEFAULT_PORT}"
 
 is_running() {
@@ -329,112 +284,66 @@ is_running() {
   [ -n "\$pid" ] && kill -0 "\$pid" 2>/dev/null
 }
 
-start_server() {
-  if is_running; then
-    printf 'pyExplorer is already running at http://127.0.0.1:%s\n' "\$port"
-    return
-  fi
-  mkdir -p "\$RUNTIME_DIR"
-  cd "\$APP_DIR"
-  nohup "\$PYTHON" run.py --host 127.0.0.1 --port "\$port" "\$@" >"\$LOG_FILE" 2>&1 &
-  pid="\$!"
-  printf '%s\n' "\$pid" > "\$PID_FILE"
-
-  attempts=0
-  while [ "\$attempts" -lt 50 ]; do
-    if ! kill -0 "\$pid" 2>/dev/null; then
-      rm -f "\$PID_FILE"
-      printf 'pyExplorer failed to start. See %s\n' "\$LOG_FILE" >&2
-      exit 1
-    fi
-    if curl -fsS "http://127.0.0.1:\$port/api/v1/health" >/dev/null 2>&1; then
-      printf 'pyExplorer is running at http://127.0.0.1:%s\n' "\$port"
-      return
-    fi
-    sleep 0.2
-    attempts=\$((attempts + 1))
-  done
-  printf 'pyExplorer is starting. Check status with: pyexplorer status\n'
-}
-
 case "\$command_name" in
   start)
-    start_server "\$@"
+    if is_running; then
+      printf 'pyExplorer is already running at http://127.0.0.1:%s\n' "\$port"
+      exit 0
+    fi
+    cd "\$APP_DIR"
+    nohup "\$PYTHON" run.py --host 127.0.0.1 --port "\$port" "\$@" >"\$LOG_FILE" 2>&1 &
+    pid="\$!"
+    printf '%s\n' "\$pid" >"\$PID_FILE"
+    attempts=0
+    while [ "\$attempts" -lt 50 ]; do
+      if ! kill -0 "\$pid" 2>/dev/null; then
+        rm -f "\$PID_FILE"
+        printf 'pyExplorer failed to start. See %s\n' "\$LOG_FILE" >&2
+        exit 1
+      fi
+      if curl -fsS "http://127.0.0.1:\$port/api/v1/health" >/dev/null 2>&1; then
+        printf 'pyExplorer is running at http://127.0.0.1:%s\n' "\$port"
+        exit 0
+      fi
+      sleep 0.2
+      attempts=\$((attempts + 1))
+    done
+    printf 'pyExplorer is starting. Check status with: pyexplorer status\n'
     ;;
   serve)
     cd "\$APP_DIR"
     exec "\$PYTHON" run.py --host 127.0.0.1 --port "\$port" "\$@"
     ;;
   stop)
-    if ! is_running; then
-      rm -f "\$PID_FILE"
-      printf 'pyExplorer is not running.\n'
-      exit 0
-    fi
+    if ! is_running; then rm -f "\$PID_FILE"; printf 'pyExplorer is not running.\n'; exit 0; fi
     pid="\$(cat "\$PID_FILE")"
     kill "\$pid" 2>/dev/null || true
     attempts=0
-    while kill -0 "\$pid" 2>/dev/null && [ "\$attempts" -lt 30 ]; do
-      sleep 0.2
-      attempts=\$((attempts + 1))
-    done
-    if kill -0 "\$pid" 2>/dev/null; then
-      kill -9 "\$pid" 2>/dev/null || true
-    fi
+    while kill -0 "\$pid" 2>/dev/null && [ "\$attempts" -lt 30 ]; do sleep 0.2; attempts=\$((attempts + 1)); done
+    kill -0 "\$pid" 2>/dev/null && kill -9 "\$pid" 2>/dev/null || true
     rm -f "\$PID_FILE"
     printf 'pyExplorer stopped.\n'
     ;;
-  restart)
-    "\$0" stop
-    "\$0" start "\$@"
-    ;;
+  restart) "\$0" stop; "\$0" start "\$@" ;;
   status)
-    if is_running; then
-      printf 'pyExplorer is running at http://127.0.0.1:%s\n' "\$port"
-    else
-      printf 'pyExplorer is not running.\n'
-      exit 1
-    fi
+    if is_running; then printf 'pyExplorer is running at http://127.0.0.1:%s\n' "\$port"; else printf 'pyExplorer is not running.\n'; exit 1; fi
     ;;
-  logs)
-    [ -f "\$LOG_FILE" ] || { printf 'No log file exists yet.\n'; exit 0; }
-    tail -n 120 -f "\$LOG_FILE"
-    ;;
+  logs) [ -f "\$LOG_FILE" ] && tail -n 120 -f "\$LOG_FILE" || printf 'No log file exists yet.\n' ;;
   open)
     url="http://127.0.0.1:\$port"
     if command -v open >/dev/null 2>&1; then open "\$url" >/dev/null 2>&1 &
     elif command -v xdg-open >/dev/null 2>&1; then xdg-open "\$url" >/dev/null 2>&1 &
-    else printf '%s\n' "\$url"
-    fi
+    else printf '%s\n' "\$url"; fi
     ;;
-  update)
-    PYEXPLORER_HOME='$INSTALL_ROOT' PYEXPLORER_BIN_DIR='$BIN_DIR' PYEXPLORER_PORT="\$port" \
-      exec sh "\$APP_DIR/scripts/install.sh"
-    ;;
-  *)
-    printf 'Usage: pyexplorer {start|serve|stop|restart|status|logs|open|update}\n' >&2
-    exit 2
-    ;;
+  update) curl -fsSL "\$RAW_INSTALLER" | sh ;;
+  *) printf 'Usage: pyexplorer {start|serve|stop|restart|status|logs|open|update}\n' >&2; exit 2 ;;
 esac
 LAUNCHER
-
   chmod 0755 "$launcher"
 }
 
-TEMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t pyexplorer)"
 stop_existing_process
-
-if [ -n "$SOURCE_DIR" ]; then
-  SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
-  if [ "$SOURCE_DIR" != "$APP_DIR" ]; then
-    copy_source_tree "$SOURCE_DIR"
-  else
-    [ -f "$APP_DIR/run.py" ] || fail "The configured source path is not a pyExplorer checkout."
-  fi
-else
-  download_source_tree
-fi
-
+install_source
 ensure_configuration
 ensure_uv
 ensure_python
@@ -447,10 +356,6 @@ say "pyExplorer installation completed successfully."
 say "Application: $APP_DIR"
 if [ "$INSTALL_LAUNCHER" -eq 1 ]; then
   say "Launcher:    $BIN_DIR/pyexplorer"
-  case ":$PATH:" in
-    *":$BIN_DIR:"*) : ;;
-    *) say "Add $BIN_DIR to PATH to run 'pyexplorer' from a new terminal." ;;
-  esac
 fi
 
 if [ "$START_AFTER_INSTALL" -eq 1 ]; then
@@ -460,6 +365,4 @@ if [ "$START_AFTER_INSTALL" -eq 1 ]; then
     cd "$APP_DIR"
     exec "$VENV_DIR/bin/python" run.py --host 127.0.0.1 --port "$PORT"
   fi
-else
-  say "Start it with: $BIN_DIR/pyexplorer start"
 fi
