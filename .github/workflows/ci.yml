@@ -27,6 +27,13 @@ jobs:
             bash -n scripts/macos/setup.command
           fi
           sh scripts/install.sh --help > /dev/null
+          manifest="$(curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt)"
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            platform="${target%-*}"
+            arch="${target#*-}"
+            node_file="$(printf '%s\n' "$manifest" | awk -v platform="$platform" -v arch="$arch" '$2 ~ ("^node-v[0-9.]+-" platform "-" arch "\\.tar\\.gz$") { print $2; exit }')"
+            test -n "$node_file"
+          done
       - name: Validate Windows installers
         if: runner.os == 'Windows'
         shell: pwsh
@@ -47,6 +54,13 @@ jobs:
             if ($errors.Count -gt 0) {
               $errors | ForEach-Object { Write-Error $_.Message }
               exit 1
+            }
+          }
+          $manifest = (Invoke-WebRequest -UseBasicParsing -Uri 'https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt').Content
+          foreach ($arch in @('x64', 'arm64')) {
+            $pattern = '(?m)^[a-fA-F0-9]{64}\s+(node-v[0-9.]+-win-' + [regex]::Escape($arch) + '\.zip)$'
+            if (-not [regex]::IsMatch($manifest, $pattern)) {
+              throw "Node.js manifest did not contain a Windows $arch runtime."
             }
           }
   backend:
@@ -78,7 +92,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install frontend
-        run: npm install
+        run: npm ci
       - name: Lint frontend
         run: npm run lint
       - name: Build frontend
@@ -104,7 +118,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run build
       - name: Start application
         run: |
