@@ -20,8 +20,7 @@ def main() -> None:
 
     if not FRONTEND_DIST.joinpath("index.html").is_file():
         raise SystemExit(
-            "Frontend build not found. Run the setup script or run `npm install && npm run build` "
-            "inside the frontend directory first."
+            "Frontend build not found. Run the setup script for your platform before starting pyExplorer."
         )
 
     try:
