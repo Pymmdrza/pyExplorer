@@ -1,8 +1,8 @@
-FROM node:24-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 
 WORKDIR /build/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm install
+COPY frontend/package.json ./
+RUN npm install --no-audit --no-fund --package-lock=false --progress=false
 COPY frontend/ ./
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
