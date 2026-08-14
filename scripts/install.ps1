@@ -192,21 +192,31 @@ function Install-Node([string]$TempDir) {
 
     Write-Step "Installing a private Node.js runtime..."
     $Arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
-    $IndexUrl = "https://nodejs.org/download/release/latest-v$NodeChannel.x/"
-    $Index = (Invoke-WebRequest -UseBasicParsing -Uri $IndexUrl).Content
-    $Pattern = "node-v[0-9.]+-win-$Arch\.zip"
-    $Match = [regex]::Match($Index, $Pattern)
-    if (-not $Match.Success) { throw "Could not resolve a Node.js build for Windows $Arch." }
+    $IndexUrl = "https://nodejs.org/dist/latest-v$NodeChannel.x/"
+    try {
+        $Checksums = (Invoke-WebRequest -UseBasicParsing -Uri "${IndexUrl}SHASUMS256.txt").Content
+    }
+    catch {
+        throw "Could not download the Node.js release manifest. $($_.Exception.Message)"
+    }
 
-    $NodeFile = $Match.Value
-    $Archive = Join-Path $TempDir $NodeFile
-    $ExtractDir = Join-Path $TempDir "node"
-    Invoke-WebRequest -UseBasicParsing -Uri "$IndexUrl$NodeFile" -OutFile $Archive
+    $Pattern = '(?m)^[a-fA-F0-9]{64}\s+(node-v[0-9.]+-win-' + [regex]::Escape($Arch) + '\.zip)$'
+    $Match = [regex]::Match($Checksums, $Pattern)
+    if (-not $Match.Success) { throw "Could not resolve a Node.js build for Windows $Arch from the release manifest." }
 
-    $Checksums = (Invoke-WebRequest -UseBasicParsing -Uri "${IndexUrl}SHASUMS256.txt").Content
+    $NodeFile = $Match.Groups[1].Value
     $ChecksumPattern = '(?m)^([a-fA-F0-9]{64})\s+' + [regex]::Escape($NodeFile) + '$'
     $ChecksumMatch = [regex]::Match($Checksums, $ChecksumPattern)
     if (-not $ChecksumMatch.Success) { throw "Could not resolve the Node.js archive checksum." }
+
+    $Archive = Join-Path $TempDir $NodeFile
+    $ExtractDir = Join-Path $TempDir "node"
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri "$IndexUrl$NodeFile" -OutFile $Archive
+    }
+    catch {
+        throw "Could not download the Node.js runtime archive. $($_.Exception.Message)"
+    }
     $ExpectedHash = $ChecksumMatch.Groups[1].Value.ToLowerInvariant()
     $ActualHash = (Get-FileHash -Path $Archive -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($ExpectedHash -ne $ActualHash) { throw "Node.js archive checksum verification failed." }
