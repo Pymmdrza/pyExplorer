@@ -17,27 +17,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate dependency policy
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           test ! -f frontend/package-lock.json
-          python - <<'PY'
-          from pathlib import Path
-
-          needle = "npm " + "ci"
-          ignored = {'.git', 'node_modules', '.pyexplorer-runtime'}
-          offenders = []
-          for path in Path('.').rglob('*'):
-              if not path.is_file() or any(part in ignored for part in path.parts):
-                  continue
-              try:
-                  text = path.read_text(encoding='utf-8')
-              except (UnicodeDecodeError, OSError):
-                  continue
-              if needle in text:
-                  offenders.append(str(path))
-          if offenders:
-              raise SystemExit('Disallowed clean-install command found in: ' + ', '.join(offenders))
-          PY
+          needle="$(printf 'npm %s' 'ci')"
+          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.pyexplorer-runtime "$needle" .; then
+            echo 'Disallowed clean-install command found.' >&2
+            exit 1
+          fi
+      - name: Validate dependency policy on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path 'frontend/package-lock.json') {
+            throw 'frontend/package-lock.json must not be committed.'
+          }
+          $needle = 'npm ' + 'ci'
+          $offenders = Get-ChildItem -Recurse -File |
+            Where-Object { $_.FullName -notmatch '[\\/](?:\.git|node_modules|\.pyexplorer-runtime)[\\/]' } |
+            Select-String -SimpleMatch $needle
+          if ($offenders) {
+            $offenders | ForEach-Object { Write-Error $_.Path }
+            throw 'Disallowed clean-install command found.'
+          }
       - name: Validate POSIX installers
         if: runner.os != 'Windows'
         shell: bash
