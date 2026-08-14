@@ -10,9 +10,6 @@ permissions:
 
 jobs:
   installers:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +43,7 @@ jobs:
         shell: bash
         run: |
           sh -n scripts/install.sh
-          bash -n scripts/linux/setup.sh scripts/linux/run.sh
+          bash -n scripts/linux/setup.sh scripts/linux/run.sh scripts/linux/dev.sh scripts/linux/test.sh
           if [[ "$RUNNER_OS" == "macOS" ]]; then
             bash -n scripts/macos/setup.command
           fi
@@ -65,7 +62,9 @@ jobs:
           $files = @(
             'scripts/install.ps1',
             'scripts/windows/setup.ps1',
-            'scripts/windows/run.ps1'
+            'scripts/windows/run.ps1',
+            'scripts/windows/dev.ps1',
+            'scripts/windows/test.ps1'
           )
           foreach ($file in $files) {
             $tokens = $null
