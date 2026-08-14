@@ -56,6 +56,23 @@ def test_transaction_detail_returns_normalized_payload(api_client: TestClient) -
     assert payload["outputs"][0]["address"] == TEST_ADDRESS
 
 
+def test_unconfirmed_transaction_with_negative_height_returns_200(
+    api_client: TestClient, fake_blockchain_client: FakeBlockchainClient
+) -> None:
+    transaction = fake_blockchain_client.transactions[TEST_TX_HASH]
+    transaction["blockHeight"] = -1
+    transaction["confirmations"] = -1
+    transaction["size"] = -1
+
+    response = api_client.get(f"/api/v1/transactions/{TEST_TX_HASH}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["block_height"] == 0
+    assert payload["confirmations"] == 0
+    assert payload["size"] == 0
+
+
 def test_transaction_not_found_returns_404(
     api_client: TestClient, fake_blockchain_client: FakeBlockchainClient
 ) -> None:

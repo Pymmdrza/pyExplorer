@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 from datetime import UTC, datetime
+from math import isfinite
 from typing import Any
 
 from pyexplorer_api.core.constants import SATOSHI
@@ -20,22 +21,35 @@ def parse_timestamp(source: dict[str, Any], fields: Iterable[str]) -> datetime |
 
 
 def to_int(value: Any) -> int:
+    """Normalize an upstream integer into the non-negative API domain."""
     try:
-        return int(float(value))
+        numeric = float(value)
     except (TypeError, ValueError):
+        return 0
+    if not isfinite(numeric) or numeric <= 0:
+        return 0
+    try:
+        return int(numeric)
+    except (OverflowError, ValueError):
         return 0
 
 
 def to_float(value: Any) -> float:
+    """Normalize an upstream float into the non-negative API domain."""
     try:
-        return float(value)
+        numeric = float(value)
     except (TypeError, ValueError):
         return 0.0
+    if not isfinite(numeric) or numeric <= 0:
+        return 0.0
+    return numeric
 
 
 def coerce_satoshis(value: Any) -> int:
     if value is None:
         return 0
+
+    is_btc_string = False
     if isinstance(value, str):
         stripped = value.strip()
         if not stripped:
@@ -44,17 +58,21 @@ def coerce_satoshis(value: Any) -> int:
             numeric = float(stripped)
         except ValueError:
             return 0
-        if "." in stripped:
-            return int(numeric * SATOSHI)
-        return int(numeric)
-    if isinstance(value, int | float):
+        is_btc_string = "." in stripped
+    elif isinstance(value, int | float):
         numeric = float(value)
-        if numeric < 0:
-            return 0
-        if 0 < numeric < 1:
+    else:
+        return 0
+
+    if not isfinite(numeric) or numeric <= 0:
+        return 0
+
+    try:
+        if is_btc_string or numeric < 1:
             return int(numeric * SATOSHI)
         return int(numeric)
-    return 0
+    except (OverflowError, ValueError):
+        return 0
 
 
 def extract_satoshis(source: dict[str, Any], keys: Iterable[str]) -> int:
