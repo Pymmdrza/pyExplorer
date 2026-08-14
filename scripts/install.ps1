@@ -229,7 +229,7 @@ param([Parameter(Position=0)][string]`$Command='start', [Parameter(ValueFromRema
 `$Port=if (`$env:PYEXPLORER_PORT) { [int]`$env:PYEXPLORER_PORT } else { $Port }
 function Running { if (-not (Test-Path `$PidFile)) { return `$false }; `$p=Get-Content `$PidFile -ErrorAction SilentlyContinue | Select-Object -First 1; return (`$p -match '^\d+$' -and (Get-Process -Id ([int]`$p) -ErrorAction SilentlyContinue)) }
 switch (`$Command.ToLowerInvariant()) {
-  'start' { if (Running) { Write-Host "pyExplorer is already running at http://127.0.0.1:`$Port"; break }; `$p=Start-Process -FilePath `$Python -ArgumentList @('run.py','--host','127.0.0.1','--port',`$Port)+`$Rest -WorkingDirectory `$AppDir -RedirectStandardOutput `$LogFile -RedirectStandardError (`$LogFile+'.err') -PassThru -WindowStyle Hidden; Set-Content `$PidFile `$p.Id; Write-Host "pyExplorer is running at http://127.0.0.1:`$Port" }
+  'start' { if (Running) { Write-Host "pyExplorer is already running at http://127.0.0.1:`$Port"; break }; `$p=Start-Process -FilePath `$Python -ArgumentList (@('run.py','--host','127.0.0.1','--port',`$Port)+`$Rest) -WorkingDirectory `$AppDir -RedirectStandardOutput `$LogFile -RedirectStandardError (`$LogFile+'.err') -PassThru -WindowStyle Hidden; Set-Content `$PidFile `$p.Id; Write-Host "pyExplorer is running at http://127.0.0.1:`$Port" }
   'serve' { Push-Location `$AppDir; try { & `$Python run.py --host 127.0.0.1 --port `$Port @Rest } finally { Pop-Location } }
   'stop' { if (Running) { `$p=[int](Get-Content `$PidFile | Select-Object -First 1); Stop-Process -Id `$p -Force -ErrorAction SilentlyContinue }; Remove-Item `$PidFile -Force -ErrorAction SilentlyContinue; Write-Host 'pyExplorer stopped.' }
   'restart' { & `$PSCommandPath stop; & `$PSCommandPath start @Rest }
