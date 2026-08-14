@@ -5,7 +5,7 @@ React and TypeScript interface for pyExplorer.
 ## Install
 
 ```bash
-npm install
+npm install --no-audit --no-fund --package-lock=false
 ```
 
 ## Development
