@@ -2,7 +2,13 @@ import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { getTransaction } from '../api/client'
-import { DetailHeader, ErrorPanel, KeyValue, LoadingPanel } from '../components/DetailPrimitives'
+import {
+  DetailHeader,
+  ErrorPanel,
+  IdentifierValue,
+  KeyValue,
+  LoadingPanel,
+} from '../components/DetailPrimitives'
 import { useApiResource } from '../hooks/useApiResource'
 import { formatBitcoin, formatInteger, formatIsoDate } from '../utils/format'
 
@@ -18,10 +24,10 @@ export function TransactionPage() {
     <div className="record-page">
       <DetailHeader
         eyebrow="Transaction"
-        title="Transaction record"
-        description="Canonical transaction data, settlement context, value flow, and endpoint details."
+        title="Transaction"
+        description="Settlement status, transferred value, and a complete record of the transaction inputs and outputs."
         identifier={txHash}
-        identifierLabel="Transaction ID"
+        identifierLabel="Transaction hash"
       />
 
       {transaction.loading ? <LoadingPanel label="Loading transaction" /> : null}
@@ -33,7 +39,7 @@ export function TransactionPage() {
             <div className="record-summary__primary">
               <span className="summary-label">Transferred value</span>
               <strong>{formatBitcoin(transaction.data.value_btc)}</strong>
-              <span className="summary-note">Total output value represented by this transaction</span>
+              <span className="summary-note">Total output value recorded for this transaction.</span>
             </div>
             <dl className="record-facts">
               <KeyValue label="Fee" value={formatBitcoin(transaction.data.fee_btc)} />
@@ -57,9 +63,21 @@ export function TransactionPage() {
                 <span className="status-tag">Unconfirmed</span>
               )}
             </div>
-            <dl className="fact-strip">
+            <dl className="fact-strip fact-strip--wide">
               <KeyValue label="Block height" value={transaction.data.block_height > 0 ? formatInteger(transaction.data.block_height) : 'Pending'} />
-              <KeyValue label="Transaction ID" value={transaction.data.hash} mono />
+              <div className="key-value key-value--interactive">
+                <dt>Block record</dt>
+                <dd>
+                  {transaction.data.block_height > 0 ? (
+                    <IdentifierValue
+                      value={`Block #${formatInteger(transaction.data.block_height)}`}
+                      to={`/blocks/${transaction.data.block_height}`}
+                    />
+                  ) : (
+                    <span className="status-tag">Awaiting confirmation</span>
+                  )}
+                </dd>
+              </div>
             </dl>
           </section>
 
@@ -97,19 +115,34 @@ function EndpointList({ title, endpoints }: EndpointListProps) {
       {endpoints.length ? (
         <div className="endpoint-list">
           {endpoints.map((endpoint, index) => {
-            const linkable = endpoint.address !== 'Unknown' && endpoint.address !== 'Coinbase'
+            const rawValue = endpoint.address.trim()
+            const isCoinbase = rawValue === 'Coinbase'
+            const isUnknown = rawValue === 'Unknown'
+            const isOpReturn = rawValue.toUpperCase().startsWith('OP_RETURN')
+            const linkable = !isCoinbase && !isUnknown && !isOpReturn
+            const rowLabel = isOpReturn ? 'Output script' : isCoinbase ? 'Input source' : 'Address'
+            const badge = isCoinbase ? 'Coinbase' : isOpReturn ? 'Script' : null
+            const displayValue = isCoinbase ? 'Block subsidy generation' : rawValue
+            const helperText = isCoinbase
+              ? 'This input originates from a coinbase transaction.'
+              : isOpReturn
+                ? 'Non-address output. The payload is shown below for reference.'
+                : null
+
             return (
               <div className="endpoint-row" key={`${endpoint.address}-${index}`}>
                 <div className="endpoint-row__index">{String(index + 1).padStart(2, '0')}</div>
                 <div className="endpoint-row__body">
-                  <span className="endpoint-row__label">Address</span>
+                  <div className="endpoint-row__headerline">
+                    <span className="endpoint-row__label">{rowLabel}</span>
+                    {badge ? <span className="endpoint-kind">{badge}</span> : null}
+                  </div>
                   {linkable ? (
-                    <Link className="full-identifier-link" to={`/addresses/${endpoint.address}`}>
-                      {endpoint.address}
-                    </Link>
+                    <IdentifierValue value={displayValue} to={`/addresses/${displayValue}`} copyValue={displayValue} />
                   ) : (
-                    <code className="full-identifier">{endpoint.address}</code>
+                    <IdentifierValue value={displayValue} copyValue={!isUnknown ? displayValue : undefined} />
                   )}
+                  {helperText ? <p className="endpoint-row__helper">{helperText}</p> : null}
                 </div>
                 <div className="endpoint-row__value">
                   <span>Value</span>

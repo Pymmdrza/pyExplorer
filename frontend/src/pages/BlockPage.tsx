@@ -1,11 +1,17 @@
 import { useCallback } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { getBlock } from '../api/client'
-import { DetailHeader, ErrorPanel, KeyValue, LoadingPanel } from '../components/DetailPrimitives'
+import {
+  DetailHeader,
+  ErrorPanel,
+  IdentifierValue,
+  KeyValue,
+  LoadingPanel,
+} from '../components/DetailPrimitives'
 import { MetricCard } from '../components/MetricCard'
 import { useApiResource } from '../hooks/useApiResource'
-import { formatBitcoin, formatCompactNumber, formatHash, formatInteger, formatIsoDate } from '../utils/format'
+import { formatBitcoin, formatCompactNumber, formatInteger, formatIsoDate } from '../utils/format'
 
 export function BlockPage() {
   const { height = '' } = useParams()
@@ -13,14 +19,16 @@ export function BlockPage() {
   const block = useApiResource(loadBlock)
 
   return (
-    <div className="detail-page">
+    <div className="record-page">
       <DetailHeader
-        eyebrow="Block detail"
+        eyebrow="Block"
         title={`Block #${height}`}
-        description="Inspect block metadata, mining context, and transaction summaries."
+        description="Block metadata, mining context, and the transactions returned for this block."
+        identifier={block.data?.hash}
+        identifierLabel="Block hash"
       />
 
-      {block.loading ? <LoadingPanel label="Loading block..." /> : null}
+      {block.loading ? <LoadingPanel label="Loading block" /> : null}
       {block.error ? <ErrorPanel message={block.error} /> : null}
 
       {block.data ? (
@@ -60,27 +68,25 @@ export function BlockPage() {
             </div>
           </section>
 
-          <section className="detail-grid">
-            <article className="section-card data-card">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Identifiers</p>
-                  <h2>Block facts</h2>
-                </div>
+          <section className="record-section">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Identifiers</p>
+                <h2>Block facts</h2>
               </div>
-              <dl className="key-value-grid">
-                <KeyValue label="Hash" value={block.data.hash} />
-                <KeyValue label="Timestamp" value={formatIsoDate(block.data.timestamp)} />
-                <KeyValue label="Merkle root" value={block.data.merkle_root} />
-                <KeyValue label="Nonce" value={formatInteger(block.data.nonce)} />
-                <KeyValue label="Bits" value={block.data.bits ?? '-'} />
-                <KeyValue label="Version" value={block.data.version ?? '-'} />
-              </dl>
-            </article>
+            </div>
+            <dl className="record-facts">
+              <KeyValue label="Hash" value={block.data.hash} mono />
+              <KeyValue label="Timestamp" value={formatIsoDate(block.data.timestamp)} />
+              <KeyValue label="Merkle root" value={block.data.merkle_root} mono />
+              <KeyValue label="Nonce" value={formatInteger(block.data.nonce)} />
+              <KeyValue label="Bits" value={block.data.bits ?? 'Not available'} />
+              <KeyValue label="Version" value={block.data.version ?? 'Not available'} />
+            </dl>
           </section>
 
-          <section className="section-card table-card">
-            <div className="section-heading">
+          <section className="record-section">
+            <div className="section-heading section-heading--compact">
               <div>
                 <p className="eyebrow">Transactions</p>
                 <h2>Block transaction sample</h2>
@@ -90,29 +96,29 @@ export function BlockPage() {
               </span>
             </div>
             {block.data.transactions.length ? (
-              <div className="responsive-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Transaction</th>
-                      <th>Time</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {block.data.transactions.map((transaction) => (
-                      <tr key={transaction.hash}>
-                        <td className="hash-cell">
-                          <Link to={`/transactions/${transaction.hash}`}>
-                            {formatHash(transaction.hash)}
-                          </Link>
-                        </td>
-                        <td>{transaction.time ? formatIsoDate(transaction.time) : 'Pending'}</td>
-                        <td>{formatBitcoin(transaction.value_btc)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="activity-list activity-list--compact">
+                {block.data.transactions.map((transaction) => (
+                  <article className="activity-row activity-row--compact" key={transaction.hash}>
+                    <div className="activity-row__direction" data-direction="in">
+                      <span>Transaction</span>
+                    </div>
+                    <div className="activity-row__main">
+                      <span className="activity-row__label">Transaction hash</span>
+                      <IdentifierValue
+                        value={transaction.hash}
+                        to={`/transactions/${transaction.hash}`}
+                        copyValue={transaction.hash}
+                      />
+                      <span className="activity-row__time">
+                        {transaction.time ? formatIsoDate(transaction.time) : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="activity-row__amount">
+                      <span>Value</span>
+                      <strong>{formatBitcoin(transaction.value_btc)}</strong>
+                    </div>
+                  </article>
+                ))}
               </div>
             ) : (
               <div className="empty-state">

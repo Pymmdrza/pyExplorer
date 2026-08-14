@@ -15,6 +15,13 @@ interface KeyValueProps {
   mono?: boolean
 }
 
+interface IdentifierValueProps {
+  value: string
+  to?: string
+  copyValue?: string
+  className?: string
+}
+
 export function DetailHeader({
   eyebrow,
   title,
@@ -39,11 +46,23 @@ export function DetailHeader({
 }
 
 export function IdentifierBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="identifier-block">
+      <span className="identifier-block__label">{label}</span>
+      <IdentifierValue value={value} copyValue={value} className="identifier-value--hero" />
+    </div>
+  )
+}
+
+export function IdentifierValue({ value, to, copyValue, className }: IdentifierValueProps) {
   const [copied, setCopied] = useState(false)
 
-  async function copyValue() {
+  async function handleCopy() {
+    if (!copyValue) {
+      return
+    }
     try {
-      await navigator.clipboard.writeText(value)
+      await navigator.clipboard.writeText(copyValue)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
@@ -52,14 +71,19 @@ export function IdentifierBlock({ label, value }: { label: string; value: string
   }
 
   return (
-    <div className="identifier-block">
-      <div className="identifier-block__meta">
-        <span>{label}</span>
-        <button type="button" className="text-action" onClick={copyValue}>
+    <div className={`identifier-value ${className ?? ''}`.trim()}>
+      {to ? (
+        <Link className="identifier-link" to={to} title={value}>
+          {value}
+        </Link>
+      ) : (
+        <code className="identifier-text" title={value}>{value}</code>
+      )}
+      {copyValue ? (
+        <button type="button" className="identifier-copy" onClick={handleCopy}>
           {copied ? 'Copied' : 'Copy'}
         </button>
-      </div>
-      <code>{value}</code>
+      ) : null}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 export function formatCompactNumber(value: number, maximumFractionDigits = 2): string {
-  if (!Number.isFinite(value) || value === 0) {
+  if (!Number.isFinite(value)) {
     return '-'
   }
   return new Intl.NumberFormat('en-US', {
@@ -9,14 +9,14 @@ export function formatCompactNumber(value: number, maximumFractionDigits = 2): s
 }
 
 export function formatInteger(value: number): string {
-  if (!Number.isFinite(value) || value === 0) {
+  if (!Number.isFinite(value)) {
     return '-'
   }
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)
 }
 
 export function formatCurrency(value: number): string {
-  if (!Number.isFinite(value) || value === 0) {
+  if (!Number.isFinite(value)) {
     return '-'
   }
   return new Intl.NumberFormat('en-US', {
@@ -27,10 +27,11 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatBitcoin(value: number, maximumFractionDigits = 8): string {
-  if (!Number.isFinite(value) || value === 0) {
+  if (!Number.isFinite(value)) {
     return '-'
   }
   return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: value === 0 ? 0 : 0,
     maximumFractionDigits,
   }).format(value)} BTC`
 }

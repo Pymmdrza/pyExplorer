@@ -1,8 +1,13 @@
 import { useCallback } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { getAddress } from '../api/client'
-import { DetailHeader, ErrorPanel, LoadingPanel } from '../components/DetailPrimitives'
+import {
+  DetailHeader,
+  ErrorPanel,
+  IdentifierValue,
+  LoadingPanel,
+} from '../components/DetailPrimitives'
 import { useApiResource } from '../hooks/useApiResource'
 import { formatBitcoin, formatInteger, formatIsoDate } from '../utils/format'
 
@@ -15,8 +20,8 @@ export function AddressPage() {
     <div className="record-page">
       <DetailHeader
         eyebrow="Address"
-        title="Address record"
-        description="Balance position, cumulative transfer volume, and the most recent confirmed or pending activity."
+        title="Address"
+        description="Current balance, lifetime transfer volume, and the most recent address activity."
         identifier={address}
         identifierLabel="Bitcoin address"
       />
@@ -30,7 +35,8 @@ export function AddressPage() {
             <div className="balance-panel__lead">
               <span className="summary-label">Current balance</span>
               <strong>{formatBitcoin(addressState.data.final_balance_btc)}</strong>
-              <code>{addressState.data.address}</code>
+              <span className="summary-note">Live balance for the currently viewed address.</span>
+              <IdentifierValue value={addressState.data.address} copyValue={addressState.data.address} className="balance-panel__identifier" />
             </div>
             <dl className="balance-panel__metrics">
               <div>
@@ -69,10 +75,12 @@ export function AddressPage() {
                         <span>{incoming ? 'Received' : 'Sent'}</span>
                       </div>
                       <div className="activity-row__main">
-                        <span className="activity-row__label">Transaction ID</span>
-                        <Link className="full-identifier-link" to={`/transactions/${transaction.hash}`}>
-                          {transaction.hash}
-                        </Link>
+                        <span className="activity-row__label">Transaction hash</span>
+                        <IdentifierValue
+                          value={transaction.hash}
+                          to={`/transactions/${transaction.hash}`}
+                          copyValue={transaction.hash}
+                        />
                         <span className="activity-row__time">
                           {transaction.time ? formatIsoDate(transaction.time) : 'Pending confirmation'}
                         </span>
