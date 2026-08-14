@@ -9,6 +9,46 @@ permissions:
   contents: read
 
 jobs:
+
+  installers:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate POSIX installers
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          sh -n scripts/install.sh
+          bash -n scripts/linux/setup.sh scripts/linux/run.sh
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            bash -n scripts/macos/setup.command
+          fi
+          sh scripts/install.sh --help > /dev/null
+      - name: Validate Windows installers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/install.ps1',
+            'scripts/windows/setup.ps1',
+            'scripts/windows/run.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
+          }
   backend:
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +78,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install frontend
-        run: npm ci
+        run: npm install
       - name: Lint frontend
         run: npm run lint
       - name: Build frontend
@@ -64,7 +104,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: |
-          npm ci
+          npm install
           npm run build
       - name: Start application
         run: |

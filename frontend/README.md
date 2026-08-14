@@ -5,7 +5,7 @@ React and TypeScript interface for pyExplorer.
 ## Install
 
 ```bash
-npm ci
+npm install
 ```
 
 ## Development
