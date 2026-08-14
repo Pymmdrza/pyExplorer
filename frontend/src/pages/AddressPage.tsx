@@ -2,10 +2,9 @@ import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { getAddress } from '../api/client'
-import { DetailHeader, ErrorPanel, KeyValue, LoadingPanel } from '../components/DetailPrimitives'
-import { MetricCard } from '../components/MetricCard'
+import { DetailHeader, ErrorPanel, LoadingPanel } from '../components/DetailPrimitives'
 import { useApiResource } from '../hooks/useApiResource'
-import { formatBitcoin, formatHash, formatInteger, formatIsoDate } from '../utils/format'
+import { formatBitcoin, formatInteger, formatIsoDate } from '../utils/format'
 
 export function AddressPage() {
   const { address = '' } = useParams()
@@ -13,109 +12,86 @@ export function AddressPage() {
   const addressState = useApiResource(loadAddress)
 
   return (
-    <div className="detail-page">
+    <div className="record-page">
       <DetailHeader
-        eyebrow="Address detail"
-        title={formatHash(address, 16, 16)}
-        description="Review balances, aggregate flow, and the latest activity for this address."
+        eyebrow="Address"
+        title="Address record"
+        description="Balance position, cumulative transfer volume, and the most recent confirmed or pending activity."
+        identifier={address}
+        identifierLabel="Bitcoin address"
       />
 
-      {addressState.loading ? <LoadingPanel label="Loading address..." /> : null}
+      {addressState.loading ? <LoadingPanel label="Loading address" /> : null}
       {addressState.error ? <ErrorPanel message={addressState.error} /> : null}
 
       {addressState.data ? (
         <>
-          <section className="section-card">
-            <div className="section-heading">
+          <section className="balance-panel" aria-label="Address balance">
+            <div className="balance-panel__lead">
+              <span className="summary-label">Current balance</span>
+              <strong>{formatBitcoin(addressState.data.final_balance_btc)}</strong>
+              <code>{addressState.data.address}</code>
+            </div>
+            <dl className="balance-panel__metrics">
               <div>
-                <p className="eyebrow">Balance overview</p>
-                <h2>Address metrics</h2>
+                <dt>Total received</dt>
+                <dd>{formatBitcoin(addressState.data.total_received_btc)}</dd>
               </div>
-            </div>
-            <div className="metrics-grid">
-              <MetricCard
-                label="Final balance"
-                value={formatBitcoin(addressState.data.final_balance_btc)}
-                detail="Current known balance"
-                tone="amber"
-              />
-              <MetricCard
-                label="Total received"
-                value={formatBitcoin(addressState.data.total_received_btc)}
-                detail="Lifetime inbound value"
-                tone="green"
-              />
-              <MetricCard
-                label="Total sent"
-                value={formatBitcoin(addressState.data.total_sent_btc)}
-                detail="Lifetime outbound value"
-                tone="violet"
-              />
-              <MetricCard
-                label="Transactions"
-                value={formatInteger(addressState.data.tx_count)}
-                detail="Observed activity count"
-                tone="blue"
-              />
-            </div>
+              <div>
+                <dt>Total sent</dt>
+                <dd>{formatBitcoin(addressState.data.total_sent_btc)}</dd>
+              </div>
+              <div>
+                <dt>Transactions</dt>
+                <dd>{formatInteger(addressState.data.tx_count)}</dd>
+              </div>
+            </dl>
           </section>
 
-          <section className="section-card table-card">
-            <div className="section-heading">
+          <section className="record-section activity-section">
+            <div className="section-heading section-heading--compact">
               <div>
-                <p className="eyebrow">Recent activity</p>
-                <h2>Latest transactions</h2>
+                <span className="eyebrow">Activity</span>
+                <h2>Transaction history</h2>
               </div>
-              <span className="muted">
-                Page {addressState.data.pagination.current_page} of{' '}
-                {addressState.data.pagination.total_pages}
+              <span className="pagination-note">
+                Page {addressState.data.pagination.current_page} of {addressState.data.pagination.total_pages}
               </span>
             </div>
+
             {addressState.data.transactions.length ? (
-              <div className="responsive-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Transaction</th>
-                      <th>Time</th>
-                      <th>Value</th>
-                      <th>Balance change</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {addressState.data.transactions.map((transaction) => (
-                      <tr key={transaction.hash}>
-                        <td className="hash-cell">
-                          <Link to={`/transactions/${transaction.hash}`}>
-                            {formatHash(transaction.hash)}
-                          </Link>
-                        </td>
-                        <td>{transaction.time ? formatIsoDate(transaction.time) : 'Pending'}</td>
-                        <td>{formatBitcoin(transaction.value_btc)}</td>
-                        <td>{formatBitcoin(transaction.balance_change_btc)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="activity-list">
+                {addressState.data.transactions.map((transaction) => {
+                  const incoming = transaction.balance_change_btc >= 0
+                  return (
+                    <article className="activity-row" key={transaction.hash}>
+                      <div className="activity-row__direction" data-direction={incoming ? 'in' : 'out'}>
+                        <span>{incoming ? 'Received' : 'Sent'}</span>
+                      </div>
+                      <div className="activity-row__main">
+                        <span className="activity-row__label">Transaction ID</span>
+                        <Link className="full-identifier-link" to={`/transactions/${transaction.hash}`}>
+                          {transaction.hash}
+                        </Link>
+                        <span className="activity-row__time">
+                          {transaction.time ? formatIsoDate(transaction.time) : 'Pending confirmation'}
+                        </span>
+                      </div>
+                      <div className="activity-row__amount">
+                        <span>Balance change</span>
+                        <strong>{formatBitcoin(transaction.balance_change_btc)}</strong>
+                        <small>Absolute value {formatBitcoin(transaction.value_btc)}</small>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
             ) : (
               <div className="empty-state">
-                <strong>No transactions returned.</strong>
-                <span>Transaction history is not currently available for this address.</span>
+                <strong>No transaction activity</strong>
+                <span>No transaction history is currently available for this address.</span>
               </div>
             )}
-          </section>
-
-          <section className="section-card data-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Raw identifier</p>
-                <h2>Address</h2>
-              </div>
-            </div>
-            <dl className="key-value-grid">
-              <KeyValue label="Address" value={addressState.data.address} />
-            </dl>
           </section>
         </>
       ) : null}

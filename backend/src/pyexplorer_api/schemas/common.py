@@ -19,7 +19,6 @@ class HealthResponse(BaseModel):
 
 class ReadyResponse(BaseModel):
     ready: bool
-    providers: int
     realtime_enabled: bool
 
 

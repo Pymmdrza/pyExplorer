@@ -9,7 +9,7 @@ pyExplorer is a lightweight Bitcoin blockchain explorer built with FastAPI, Uvic
 - Block metadata and paginated transaction records
 - Network overview with market, chain, mining, and mempool metrics
 - Realtime unconfirmed transaction feed over Server-Sent Events
-- Multi-provider fallback with bounded retries and temporary circuit breaking
+- Bounded retries and resilient network error handling
 - Bounded in-process TTL cache with concurrent request coalescing
 - Responsive light and dark interfaces with keyboard and reduced-motion support
 - Single-process production runtime with Uvicorn
@@ -26,7 +26,7 @@ Uvicorn / FastAPI
   |-- Versioned REST API
   |-- Realtime SSE stream
   |-- Network statistics endpoints
-  |-- Bitcoin data providers with fallback
+  |-- Bitcoin network data endpoints
   `-- Blockchain websocket for realtime mempool events
 ```
 

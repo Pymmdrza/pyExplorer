@@ -14,7 +14,6 @@ const fallbackOverview: NetworkOverview = {
   tx_count_24h: 0,
   mempool_size: 0,
   latest_block_height: 0,
-  providers: [],
   updated_at: new Date().toISOString(),
 }
 

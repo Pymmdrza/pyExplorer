@@ -36,8 +36,7 @@ export function DashboardPage() {
           </div>
           <h2 id="status-title">Explorer service is ready for live Bitcoin data.</h2>
           <p>
-            Records are checked across configured data sources and cached briefly for a faster,
-            consistent experience.
+            Network records are retrieved on demand and cached briefly for a fast, consistent experience.
           </p>
           <dl className="status-list">
             <div>
@@ -47,10 +46,6 @@ export function DashboardPage() {
             <div>
               <dt>Live feed</dt>
               <dd>{live.status}</dd>
-            </div>
-            <div>
-              <dt>Data sources</dt>
-              <dd>{overview.providers.length || 'Unavailable'}</dd>
             </div>
           </dl>
           {network.error ? <p className="inline-alert">{network.error}</p> : null}
@@ -63,7 +58,7 @@ export function DashboardPage() {
             <p className="eyebrow">Network overview</p>
             <h2 id="metrics-title">Key Bitcoin metrics</h2>
           </div>
-          <span className="muted">Updated from connected market and network sources</span>
+          <span className="muted">Current network snapshot</span>
         </div>
         <div className="metrics-grid">
           <MetricCard
@@ -175,37 +170,6 @@ export function DashboardPage() {
         </article>
       </section>
 
-      <section id="providers" className="section-card" aria-labelledby="providers-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Data source health</p>
-            <h2 id="providers-title">Connected source status</h2>
-          </div>
-          <span className="muted">Configured network sources</span>
-        </div>
-        <div className="provider-grid">
-          {overview.providers.length ? (
-            overview.providers.map((provider) => (
-              <article className="provider-card" key={provider.name}>
-                <span
-                  className={`provider-card__dot provider-card__dot--${provider.status}`}
-                  aria-hidden="true"
-                />
-                <div>
-                  <strong>{provider.name}</strong>
-                  <small>Operational source</small>
-                </div>
-                <span>{provider.status}</span>
-              </article>
-            ))
-          ) : (
-            <div className="empty-state">
-              <strong>Data sources are configured in the service.</strong>
-              <span>Once the service is running, this panel will show source availability.</span>
-            </div>
-          )}
-        </div>
-      </section>
     </>
   )
 }

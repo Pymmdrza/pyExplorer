@@ -17,7 +17,6 @@ async def health(settings: SettingsDep) -> HealthResponse:
 @router.get("/ready", response_model=ReadyResponse)
 async def ready(settings: SettingsDep) -> ReadyResponse:
     return ReadyResponse(
-        ready=bool(settings.providers),
-        providers=len(settings.providers),
+        ready=bool(settings.blockchain_base_url),
         realtime_enabled=settings.realtime_enabled,
     )

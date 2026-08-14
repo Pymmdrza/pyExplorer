@@ -22,7 +22,19 @@ class TransactionService:
                 raise NotFoundError(
                     "Transaction not found.", {"tx_hash": validated_hash}
                 )
-            return TransactionResponse(**normalise_transaction(raw))
+            normalized = normalise_transaction(raw)
+            if normalized["confirmations"] == 0 and normalized["block_height"] > 0:
+                try:
+                    latest_height = await self.client.get_text_url(
+                        self.client.settings.blockchain_url("blockcount")
+                    )
+                    if latest_height:
+                        normalized["confirmations"] = max(
+                            int(latest_height) - int(normalized["block_height"]) + 1, 0
+                        )
+                except Exception:
+                    pass
+            return TransactionResponse(**normalized)
 
         return await self.cache.get_or_set(
             f"transaction:{validated_hash}",

@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getTransaction } from '../api/client'
 import { DetailHeader, ErrorPanel, KeyValue, LoadingPanel } from '../components/DetailPrimitives'
 import { useApiResource } from '../hooks/useApiResource'
-import { formatBitcoin, formatHash, formatInteger, formatIsoDate } from '../utils/format'
+import { formatBitcoin, formatInteger, formatIsoDate } from '../utils/format'
 
 export function TransactionPage() {
   const { txHash = '' } = useParams()
@@ -15,53 +15,55 @@ export function TransactionPage() {
   const transaction = useApiResource(loadTransaction)
 
   return (
-    <div className="detail-page">
+    <div className="record-page">
       <DetailHeader
-        eyebrow="Transaction detail"
-        title={formatHash(txHash, 14, 14)}
-        description="Review transaction timing, confirmations, inputs, outputs, fees, and related block information."
+        eyebrow="Transaction"
+        title="Transaction record"
+        description="Canonical transaction data, settlement context, value flow, and endpoint details."
+        identifier={txHash}
+        identifierLabel="Transaction ID"
       />
 
-      {transaction.loading ? <LoadingPanel label="Loading transaction..." /> : null}
+      {transaction.loading ? <LoadingPanel label="Loading transaction" /> : null}
       {transaction.error ? <ErrorPanel message={transaction.error} /> : null}
 
       {transaction.data ? (
         <>
-          <section className="detail-grid">
-            <article className="section-card data-card">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Summary</p>
-                  <h2>Transaction facts</h2>
-                </div>
-              </div>
-              <dl className="key-value-grid">
-                <KeyValue label="Hash" value={transaction.data.hash} />
-                <KeyValue label="Time" value={formatIsoDate(transaction.data.time)} />
-                <KeyValue label="Confirmations" value={formatInteger(transaction.data.confirmations)} />
-                <KeyValue label="Size" value={`${formatInteger(transaction.data.size)} bytes`} />
-                <KeyValue label="Value" value={formatBitcoin(transaction.data.value_btc)} />
-                <KeyValue label="Fee" value={formatBitcoin(transaction.data.fee_btc)} />
-              </dl>
-            </article>
-
-            <article className="section-card data-card">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">Block context</p>
-                  <h2>Confirmed in block</h2>
-                </div>
-              </div>
-              <Link className="large-link" to={`/blocks/${transaction.data.block_height}`}>
-                #{formatInteger(transaction.data.block_height)}
-              </Link>
-              <p className="muted">
-                Open the containing block to inspect peer transactions and block metadata.
-              </p>
-            </article>
+          <section className="record-summary" aria-label="Transaction summary">
+            <div className="record-summary__primary">
+              <span className="summary-label">Transferred value</span>
+              <strong>{formatBitcoin(transaction.data.value_btc)}</strong>
+              <span className="summary-note">Total output value represented by this transaction</span>
+            </div>
+            <dl className="record-facts">
+              <KeyValue label="Fee" value={formatBitcoin(transaction.data.fee_btc)} />
+              <KeyValue label="Confirmations" value={formatInteger(transaction.data.confirmations)} />
+              <KeyValue label="Size" value={`${formatInteger(transaction.data.size)} bytes`} />
+              <KeyValue label="Timestamp" value={formatIsoDate(transaction.data.time)} />
+            </dl>
           </section>
 
-          <section className="detail-grid">
+          <section className="record-section">
+            <div className="section-heading section-heading--compact">
+              <div>
+                <span className="eyebrow">Settlement</span>
+                <h2>Block context</h2>
+              </div>
+              {transaction.data.block_height > 0 ? (
+                <Link className="outlined-link" to={`/blocks/${transaction.data.block_height}`}>
+                  Open block {formatInteger(transaction.data.block_height)}
+                </Link>
+              ) : (
+                <span className="status-tag">Unconfirmed</span>
+              )}
+            </div>
+            <dl className="fact-strip">
+              <KeyValue label="Block height" value={transaction.data.block_height > 0 ? formatInteger(transaction.data.block_height) : 'Pending'} />
+              <KeyValue label="Transaction ID" value={transaction.data.hash} mono />
+            </dl>
+          </section>
+
+          <section className="flow-grid" aria-label="Transaction value flow">
             <EndpointList title="Inputs" endpoints={transaction.data.inputs} />
             <EndpointList title="Outputs" endpoints={transaction.data.outputs} />
           </section>
@@ -77,43 +79,50 @@ interface EndpointListProps {
 }
 
 function EndpointList({ title, endpoints }: EndpointListProps) {
+  const total = endpoints.reduce((sum, endpoint) => sum + endpoint.value_btc, 0)
+
   return (
-    <article className="section-card table-card">
-      <div className="section-heading">
+    <article className="record-section endpoint-panel">
+      <div className="section-heading section-heading--compact">
         <div>
-          <p className="eyebrow">{title}</p>
-          <h2>{endpoints.length} entries</h2>
+          <span className="eyebrow">Value flow</span>
+          <h2>{title}</h2>
+        </div>
+        <div className="section-stat">
+          <strong>{endpoints.length}</strong>
+          <span>{formatBitcoin(total)}</span>
         </div>
       </div>
+
       {endpoints.length ? (
-        <div className="responsive-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Address</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {endpoints.map((endpoint, index) => (
-                <tr key={`${endpoint.address}-${index}`}>
-                  <td className="hash-cell">
-                    {endpoint.address === 'Unknown' || endpoint.address === 'Coinbase' ? (
-                      endpoint.address
-                    ) : (
-                      <Link to={`/addresses/${endpoint.address}`}>{endpoint.address}</Link>
-                    )}
-                  </td>
-                  <td>{formatBitcoin(endpoint.value_btc)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="endpoint-list">
+          {endpoints.map((endpoint, index) => {
+            const linkable = endpoint.address !== 'Unknown' && endpoint.address !== 'Coinbase'
+            return (
+              <div className="endpoint-row" key={`${endpoint.address}-${index}`}>
+                <div className="endpoint-row__index">{String(index + 1).padStart(2, '0')}</div>
+                <div className="endpoint-row__body">
+                  <span className="endpoint-row__label">Address</span>
+                  {linkable ? (
+                    <Link className="full-identifier-link" to={`/addresses/${endpoint.address}`}>
+                      {endpoint.address}
+                    </Link>
+                  ) : (
+                    <code className="full-identifier">{endpoint.address}</code>
+                  )}
+                </div>
+                <div className="endpoint-row__value">
+                  <span>Value</span>
+                  <strong>{formatBitcoin(endpoint.value_btc)}</strong>
+                </div>
+              </div>
+            )
+          })}
         </div>
       ) : (
         <div className="empty-state">
-          <strong>No {title.toLowerCase()} found.</strong>
-          <span>The selected data source did not return entries for this transaction.</span>
+          <strong>No entries available</strong>
+          <span>No {title.toLowerCase()} were returned for this transaction.</span>
         </div>
       )}
     </article>

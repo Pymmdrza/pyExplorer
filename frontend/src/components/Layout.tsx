@@ -23,7 +23,6 @@ export function Layout() {
               <NavLink to="/" end>Overview</NavLink>
               <a href="/#network">Network</a>
               <a href="/#live">Transactions</a>
-              <a href="/#providers">Sources</a>
             </nav>
             <button
               className="theme-toggle"

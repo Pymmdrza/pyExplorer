@@ -1,9 +1,3 @@
-export interface ProviderStatus {
-  name: string
-  base_url: string
-  status: string
-}
-
 export interface NetworkOverview {
   market_price_usd: number
   hash_rate: number
@@ -15,7 +9,6 @@ export interface NetworkOverview {
   tx_count_24h: number
   mempool_size: number
   latest_block_height: number
-  providers: ProviderStatus[]
   updated_at: string
 }
 

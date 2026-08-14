@@ -1,4 +1,4 @@
-"""Runtime settings for the modern pyExplorer API."""
+"""Runtime settings for pyExplorer."""
 
 import json
 from functools import lru_cache
@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class ProviderConfig(BaseModel):
-    """External Bitcoin API provider endpoint configuration."""
+    """Internal upstream endpoint configuration."""
 
     name: str
     base_url: AnyHttpUrl
@@ -49,7 +49,7 @@ def default_blockchain_paths() -> dict[str, str]:
 
 
 class Settings(BaseSettings):
-    """Validated application settings with safe local/demo defaults."""
+    """Validated application settings with self-contained local defaults."""
 
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env"),
@@ -65,9 +65,11 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
-    request_timeout_seconds: float = 10.0
-    provider_max_retries: int = 2
-    retry_backoff_seconds: float = 0.4
+    request_timeout_seconds: float = 12.0
+    request_max_retries: int = 3
+    provider_request_timeout_seconds: float = 6.0
+    provider_max_retries: int = 1
+    retry_backoff_seconds: float = 0.35
 
     cache_stats_ttl_seconds: int = 120
     cache_resource_ttl_seconds: int = 600
@@ -107,6 +109,22 @@ class Settings(BaseSettings):
     def blockchain_url(self, key: str) -> str:
         path = self.blockchain_paths[key]
         return f"{str(self.blockchain_base_url).rstrip('/')}/{path}"
+
+    def transaction_url(self, tx_hash: str) -> str:
+        return f"{str(self.blockchain_base_url).rstrip('/')}/rawtx/{tx_hash}?format=json"
+
+    def address_url(self, address: str, page: int, per_page: int) -> str:
+        offset = max(page - 1, 0) * per_page
+        return (
+            f"{str(self.blockchain_base_url).rstrip('/')}/rawaddr/{address}"
+            f"?limit={per_page}&offset={offset}"
+        )
+
+    def block_height_url(self, height: int | str) -> str:
+        return (
+            f"{str(self.blockchain_base_url).rstrip('/')}/block-height/{height}"
+            "?format=json"
+        )
 
 
 @lru_cache

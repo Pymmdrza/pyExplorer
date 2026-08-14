@@ -1,4 +1,4 @@
-"""Provider response normalization helpers."""
+"""Network response normalization helpers."""
 
 from collections.abc import Iterable
 from datetime import UTC, datetime
@@ -96,28 +96,48 @@ def extract_address(entry: dict[str, Any]) -> str:
     return "Unknown"
 
 
+def _transaction_inputs(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    items = raw.get("vin") or raw.get("inputs") or []
+    return items if isinstance(items, list) else []
+
+
+def _transaction_outputs(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    items = raw.get("vout") or raw.get("out") or []
+    return items if isinstance(items, list) else []
+
+
+def _entry_satoshis(entry: dict[str, Any]) -> int:
+    nested = entry.get("prev_out") or entry.get("prevOut")
+    if isinstance(nested, dict):
+        value = extract_satoshis(nested, ("valueSat", "value"))
+        if value:
+            return value
+    return extract_satoshis(entry, ("valueSat", "value"))
+
+
 def normalise_transaction(raw: dict[str, Any]) -> dict[str, Any]:
+    raw_inputs = _transaction_inputs(raw)
+    raw_outputs = _transaction_outputs(raw)
+
     inputs = [
-        {
-            "address": extract_address(vin),
-            "value_btc": extract_satoshis(vin, ("valueSat", "value")) / SATOSHI,
-        }
-        for vin in raw.get("vin", []) or []
+        {"address": extract_address(item), "value_btc": _entry_satoshis(item) / SATOSHI}
+        for item in raw_inputs
+        if isinstance(item, dict)
     ]
     outputs = [
         {
-            "address": extract_address(vout),
-            "value_btc": extract_satoshis(vout, ("valueSat", "value")) / SATOSHI,
+            "address": extract_address(item),
+            "value_btc": extract_satoshis(item, ("valueSat", "value")) / SATOSHI,
         }
-        for vout in raw.get("vout", []) or []
+        for item in raw_outputs
+        if isinstance(item, dict)
     ]
 
-    total_input_sat = sum(
-        extract_satoshis(vin, ("valueSat", "value")) for vin in raw.get("vin", []) or []
-    )
+    total_input_sat = sum(_entry_satoshis(item) for item in raw_inputs if isinstance(item, dict))
     total_output_sat = sum(
-        extract_satoshis(vout, ("valueSat", "value"))
-        for vout in raw.get("vout", []) or []
+        extract_satoshis(item, ("valueSat", "value"))
+        for item in raw_outputs
+        if isinstance(item, dict)
     )
     fee_sat = extract_satoshis(raw, ("fees", "fee"))
     if fee_sat == 0 and total_input_sat and total_output_sat:
@@ -128,9 +148,8 @@ def normalise_transaction(raw: dict[str, Any]) -> dict[str, Any]:
         "hash": raw.get("txid") or raw.get("hash", ""),
         "time": parse_timestamp(
             raw, ("blockTime", "time", "blocktime", "receivedTime", "timestamp")
-        )
-        or datetime.fromtimestamp(0, tz=UTC),
-        "block_height": to_int(raw.get("blockHeight") or raw.get("blockheight")),
+        ) or datetime.fromtimestamp(0, tz=UTC),
+        "block_height": to_int(raw.get("blockHeight") or raw.get("blockheight") or raw.get("block_height")),
         "confirmations": to_int(raw.get("confirmations")),
         "size": to_int(raw.get("size") or raw.get("vsize")),
         "value_btc": value_sat / SATOSHI,

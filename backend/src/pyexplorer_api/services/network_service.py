@@ -10,7 +10,7 @@ from pyexplorer_api.core.constants import SATOSHI
 from pyexplorer_api.exceptions import NotFoundError
 from pyexplorer_api.schemas.block import BlockResponse, BlockTransaction
 from pyexplorer_api.schemas.common import PaginationMeta
-from pyexplorer_api.schemas.network import NetworkOverview, ProviderStatus
+from pyexplorer_api.schemas.network import NetworkOverview
 from pyexplorer_api.schemas.transaction import LiveTransaction
 from pyexplorer_api.services.cache import TTLCache
 from pyexplorer_api.services.mappers import (
@@ -72,18 +72,6 @@ class NetworkService:
                 tx_count_24h=to_int(tx_count_24h),
                 mempool_size=to_int(mempool_size),
                 latest_block_height=to_int(latest_height),
-                providers=[
-                    ProviderStatus(
-                        name=provider.name,
-                        base_url=str(provider.base_url),
-                        status=(
-                            self.client.provider_status(provider.name)
-                            if hasattr(self.client, "provider_status")
-                            else "unknown"
-                        ),
-                    )
-                    for provider in settings.providers
-                ],
             )
 
         return await self.cache.get_or_set(
@@ -132,10 +120,10 @@ class NetworkService:
     def _normalise_block(
         self, raw: dict[str, Any], page: int, per_page: int
     ) -> BlockResponse:
-        raw_transactions = raw.get("txs", []) or raw.get("transactions", []) or []
+        raw_transactions = raw.get("txs", []) or raw.get("transactions", []) or raw.get("tx", []) or []
         if not isinstance(raw_transactions, list):
             raw_transactions = []
-        tx_count_source = raw.get("txCount")
+        tx_count_source = raw.get("txCount") or raw.get("n_tx")
         if tx_count_source is None:
             tx_count_source = (
                 raw.get("txs")
@@ -158,12 +146,12 @@ class NetworkService:
         return BlockResponse(
             hash=raw.get("hash", ""),
             height=to_int(raw.get("height")),
-            version=raw.get("version"),
+            version=raw.get("version") or raw.get("ver"),
             timestamp=parse_timestamp(raw, ("time", "timestamp", "blockTime"))
             or datetime.fromtimestamp(0, tz=UTC),
             tx_count=tx_count,
             size=to_int(raw.get("size")),
-            merkle_root=raw.get("merkleRoot") or raw.get("merkleroot") or "",
+            merkle_root=raw.get("merkleRoot") or raw.get("merkleroot") or raw.get("mrkl_root") or "",
             nonce=to_int(raw.get("nonce")),
             bits=raw.get("bits"),
             difficulty=to_float(raw.get("difficulty")),
@@ -172,10 +160,19 @@ class NetworkService:
         )
 
     def _normalise_block_transaction(self, tx: dict[str, Any]) -> BlockTransaction:
+        value_sat = extract_satoshis(tx, ("valueSat", "value"))
+        if value_sat == 0:
+            outputs = tx.get("out") or tx.get("vout") or []
+            if isinstance(outputs, list):
+                value_sat = sum(
+                    extract_satoshis(output, ("valueSat", "value"))
+                    for output in outputs
+                    if isinstance(output, dict)
+                )
         return BlockTransaction(
             hash=tx.get("txid") or tx.get("hash", ""),
             time=parse_timestamp(tx, ("blockTime", "time", "timestamp")),
-            value_btc=extract_satoshis(tx, ("valueSat", "value")) / SATOSHI,
+            value_btc=value_sat / SATOSHI,
         )
 
     def _normalise_live_transaction(self, tx: dict[str, Any]) -> LiveTransaction:

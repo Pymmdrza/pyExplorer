@@ -5,12 +5,6 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, Field
 
 
-class ProviderStatus(BaseModel):
-    name: str
-    base_url: str
-    status: str = "configured"
-
-
 class NetworkOverview(BaseModel):
     market_price_usd: float = Field(ge=0)
     hash_rate: float = Field(ge=0)
@@ -22,5 +16,4 @@ class NetworkOverview(BaseModel):
     tx_count_24h: int = Field(ge=0)
     mempool_size: int = Field(ge=0)
     latest_block_height: int = Field(ge=0)
-    providers: list[ProviderStatus]
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

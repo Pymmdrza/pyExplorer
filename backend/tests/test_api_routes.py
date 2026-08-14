@@ -11,7 +11,6 @@ def test_health_and_ready(api_client: TestClient) -> None:
     assert ready.status_code == 200
     assert ready.json() == {
         "ready": True,
-        "providers": 3,
         "realtime_enabled": False,
     }
 
@@ -141,11 +140,6 @@ def test_network_overview_uses_mocked_stats(api_client: TestClient) -> None:
     assert payload["latest_block_height"] == TEST_BLOCK_HEIGHT
     assert payload["tx_count_24h"] == 412345
     assert payload["mempool_size"] == 12345
-    assert [provider["name"] for provider in payload["providers"]] == [
-        "atomic",
-        "guarda",
-        "trezor",
-    ]
 
 
 def test_recent_mempool_transactions_are_normalized(api_client: TestClient) -> None:
