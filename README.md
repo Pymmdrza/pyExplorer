@@ -1,6 +1,81 @@
 # pyExplorer
 
-pyExplorer is a lightweight Bitcoin blockchain explorer built with FastAPI, Uvicorn, React, and TypeScript. A single Uvicorn process serves both the versioned API and the compiled web interface, keeping installation and runtime requirements small without requiring a reverse proxy.
+pyExplorer is a lightweight Bitcoin blockchain explorer built with FastAPI, Uvicorn, React, and TypeScript. The production application runs as a single Uvicorn process that serves both the API and the compiled web interface.
+
+## Quick install
+
+The installer is designed for a clean machine. Docker is not required, and an existing Python or Node.js installation is not required. When a compatible runtime is already present, it is reused. Otherwise, the installer creates private user-level runtimes without modifying the system Python installation.
+
+### Linux and macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Pymmdrza/pyExplorer/main/scripts/install.sh | sh
+```
+
+The same installer can be used with `wget`:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/Pymmdrza/pyExplorer/main/scripts/install.sh | sh
+```
+
+### Windows PowerShell
+
+```powershell
+irm https://raw.githubusercontent.com/Pymmdrza/pyExplorer/main/scripts/install.ps1 | iex
+```
+
+The installer downloads the current release branch, prepares isolated runtime dependencies, builds the web interface, creates the local configuration when needed, installs a launcher, and starts pyExplorer on `http://127.0.0.1:8000`.
+
+Running the install command again updates the application in place while preserving the local `.env` configuration.
+
+## Application control
+
+After installation, the launcher supports:
+
+```text
+pyexplorer start
+pyexplorer stop
+pyexplorer restart
+pyexplorer status
+pyexplorer logs
+pyexplorer open
+pyexplorer update
+pyexplorer serve
+```
+
+On Linux and macOS, the launcher is installed to `~/.local/bin/pyexplorer`. If that directory is not already on `PATH`, it can be called directly with its full path. On Windows, the installer adds its launcher directory to the user `PATH`; a newly opened terminal can use `pyexplorer` directly.
+
+To install without automatically starting the server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Pymmdrza/pyExplorer/main/scripts/install.sh | sh -s -- --no-start
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Pymmdrza/pyExplorer/main/scripts/install.ps1))) -NoStart
+```
+
+## Install from a downloaded source tree
+
+A cloned repository or extracted source archive can bootstrap itself with the same managed runtime approach.
+
+### Linux and macOS
+
+```bash
+./scripts/linux/setup.sh
+./scripts/linux/run.sh
+```
+
+### Windows
+
+Double-click `scripts\windows\setup.cmd`, or run:
+
+```powershell
+.\scripts\windows\setup.ps1
+.\scripts\windows\run.ps1
+```
+
+The setup scripts build the current checkout in place and place their managed runtime under `.pyexplorer-runtime`.
 
 ## Features
 
@@ -13,7 +88,7 @@ pyExplorer is a lightweight Bitcoin blockchain explorer built with FastAPI, Uvic
 - Bounded in-process TTL cache with concurrent request coalescing
 - Responsive light and dark interfaces with keyboard and reduced-motion support
 - Single-process production runtime with Uvicorn
-- Optional Docker deployment with the same runtime architecture
+- Optional Docker deployment using the same application runtime
 
 ## Architecture
 
@@ -30,60 +105,39 @@ Uvicorn / FastAPI
   `-- Blockchain websocket for realtime mempool events
 ```
 
-The default runtime uses asynchronous I/O end to end and one application process. The process-local cache and realtime service remain deterministic and resource-efficient without external infrastructure.
+The default runtime uses asynchronous I/O end to end and one application process. Process-local caching and realtime services keep the deployment compact without requiring a reverse proxy or external cache.
 
-## Requirements
+## Installer behavior
 
-- Python 3.11 or newer
-- Node.js 20.19+, 22.12+, or a newer supported release
-- npm
+The remote installers are intentionally user-scoped and idempotent.
 
-Node.js is required to build the web interface. It is not required while the compiled application is running.
+Linux and macOS use `${XDG_DATA_HOME:-~/.local/share}/pyexplorer` by default. Windows uses `%LOCALAPPDATA%\pyExplorer`. The following environment variables can override installer behavior:
 
-## Quick start
+| Variable | Purpose |
+| --- | --- |
+| `PYEXPLORER_HOME` | Installation root |
+| `PYEXPLORER_BIN_DIR` | Launcher directory |
+| `PYEXPLORER_BRANCH` | Git branch to install; defaults to `main` |
+| `PYEXPLORER_PORT` | Default server port; defaults to `8000` |
+| `PYEXPLORER_PYTHON_VERSION` | Managed Python version; defaults to `3.12` |
+| `PYEXPLORER_NODE_CHANNEL` | Managed Node.js major channel; defaults to `22` |
 
-### Linux and macOS
-
-```bash
-./scripts/linux/setup.sh
-python3 run.py
-```
-
-### Windows
-
-```powershell
-.\scripts\windows\setup.ps1
-python run.py
-```
-
-Open `http://localhost:8000`.
-
-The setup command installs the Python package, installs the locked frontend dependencies, and creates the production frontend build. Subsequent starts only require Python and the installed backend dependencies.
+The installer uses the official `uv` standalone bootstrap when a compatible local Python toolchain is not sufficient, and downloads a private Node.js runtime only when a compatible Node.js installation is unavailable. Downloaded Node.js archives are verified against the official SHA-256 manifest before extraction.
 
 ## Manual installation
 
-Install the backend:
+For environments where runtime management is handled externally, install the backend and build the frontend manually:
 
 ```bash
 python -m pip install -e ./backend
-```
-
-Build the frontend:
-
-```bash
 cd frontend
 npm ci
 npm run build
 cd ..
-```
-
-Start the application:
-
-```bash
 python run.py
 ```
 
-The default server binds to `127.0.0.1:8000`. To make it available on the local network:
+The default server binds to `127.0.0.1:8000`. To expose it on the local network:
 
 ```bash
 python run.py --host 0.0.0.0 --port 8000
@@ -91,7 +145,7 @@ python run.py --host 0.0.0.0 --port 8000
 
 ## Development
 
-Development mode keeps the backend and Vite server separate to provide hot module replacement.
+Development mode keeps the backend and Vite server separate for hot module replacement.
 
 ### Linux and macOS
 
@@ -111,35 +165,21 @@ Development endpoints:
 - API: `http://localhost:8000/api/v1`
 - OpenAPI documentation: `http://localhost:8000/docs`
 
-Vite proxies `/api` requests to the local Uvicorn process.
-
 ## Docker
 
-Docker is optional. The container uses a Node.js build stage for the frontend and runs the completed application with Uvicorn only.
+Docker remains optional:
 
 ```bash
 docker compose up --build
 ```
 
-Open `http://localhost:8000`.
-
-Stop the container with:
-
-```bash
-docker compose down
-```
+The container exposes the application on `http://localhost:8000`.
 
 ## Configuration
 
-Backend configuration uses environment variables prefixed with `PYEXPLORER_`. The defaults are suitable for local use. See `backend/.env.example` for the complete configuration surface.
+Backend configuration uses environment variables prefixed with `PYEXPLORER_`. Defaults are suitable for local use. See `backend/.env.example` for the complete configuration surface.
 
-Frontend builds accept:
-
-```text
-VITE_API_BASE_URL=/api/v1
-```
-
-The default relative API URL is recommended because the production frontend and API use the same origin.
+The frontend defaults to the relative API path `/api/v1`, allowing the production interface and API to use the same origin.
 
 ## API
 
@@ -178,16 +218,14 @@ npm run lint
 npm run build
 ```
 
-The repository CI runs backend linting and tests, frontend linting and production builds, and an optional container build verification.
-
 ## Project structure
 
 ```text
 backend/          FastAPI application, services, schemas, and tests
 frontend/         React and TypeScript source
-scripts/          Setup, development, run, and verification helpers
+scripts/          Installation, setup, run, development, and verification helpers
 run.py            Cross-platform Uvicorn launcher
-Dockerfile        Optional single-container production build
+Dockerfile        Optional container build
 .github/workflows Continuous integration
 ```
 
