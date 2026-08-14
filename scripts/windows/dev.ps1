@@ -1,32 +1,39 @@
 $ErrorActionPreference = "Stop"
 
-$Root = Resolve-Path "$PSScriptRoot\..\.."
-$Backend = Join-Path $Root "backend"
+$Root = (Resolve-Path "$PSScriptRoot\..\..").Path
+$Runtime = Join-Path $Root ".pyexplorer-runtime"
+$Python = Join-Path $Runtime "runtime\venv\Scripts\python.exe"
+$ManagedNpm = Join-Path $Runtime "runtime\node\npm.cmd"
 $Frontend = Join-Path $Root "frontend"
+$Backend = Join-Path $Root "backend"
 
-Write-Host "== Starting pyExplorer dev stack ==" -ForegroundColor Cyan
-
-if (-not (Test-Path (Join-Path $Frontend "node_modules"))) {
-    Write-Host "frontend/node_modules not found. Run scripts\windows\setup.ps1 first." -ForegroundColor Yellow
+if (-not (Test-Path $Python) -or -not (Test-Path (Join-Path $Frontend "node_modules"))) {
+    & (Join-Path $Root "scripts\windows\setup.ps1")
 }
 
-$BackendCommand = "cd /d `"$Backend`" && set PYTHONPATH=src && python -m uvicorn pyexplorer_api.asgi:app --reload --host 0.0.0.0 --port 8000"
-$FrontendCommand = "cd /d `"$Frontend`" && npm run dev -- --host 0.0.0.0 --port 5173"
+if (Test-Path $ManagedNpm) {
+    $Npm = $ManagedNpm
+    $env:Path = "$(Split-Path $ManagedNpm);$env:Path"
+}
+else {
+    $NpmCommand = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if (-not $NpmCommand) { $NpmCommand = Get-Command npm -ErrorAction SilentlyContinue }
+    if (-not $NpmCommand) { throw "npm runtime is unavailable. Run scripts\windows\setup.ps1." }
+    $Npm = $NpmCommand.Source
+}
 
-Start-Process cmd.exe -ArgumentList "/k", $BackendCommand -WindowStyle Normal
-Start-Sleep -Seconds 2
-Start-Process cmd.exe -ArgumentList "/k", $FrontendCommand -WindowStyle Normal
-
-Start-Sleep -Seconds 5
+Push-Location $Frontend
 try {
-    $Health = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/health" -TimeoutSec 5
-    Write-Host "Backend health: $($Health.status)" -ForegroundColor Green
-} catch {
-    Write-Host "Backend health check is not ready yet. Check the backend terminal window." -ForegroundColor Yellow
+    & $Npm install --prefer-offline --fetch-retries=3
+    if ($LASTEXITCODE -ne 0) { throw "Frontend dependency installation failed." }
 }
+finally { Pop-Location }
 
-Write-Host ""
-Write-Host "Backend:  http://localhost:8000/api/v1/health" -ForegroundColor Green
-Write-Host "Frontend: http://localhost:5173" -ForegroundColor Green
-Write-Host ""
-Write-Host "Two terminal windows were opened. Close them, or run scripts\windows\stop.ps1, to stop the servers."
+$BackendProcess = Start-Process -FilePath $Python -ArgumentList @('-m', 'uvicorn', 'pyexplorer_api.asgi:app', '--reload', '--host', '0.0.0.0', '--port', '8000') -WorkingDirectory $Backend -PassThru
+$FrontendProcess = Start-Process -FilePath $Npm -ArgumentList @('run', 'dev', '--', '--host', '0.0.0.0', '--port', '5173') -WorkingDirectory $Frontend -PassThru
+
+Write-Host "Backend:  http://localhost:8000/api/v1/health"
+Write-Host "Frontend: http://localhost:5173"
+Write-Host "Backend PID: $($BackendProcess.Id)"
+Write-Host "Frontend PID: $($FrontendProcess.Id)"
+Write-Host "Use scripts\windows\stop.ps1 to stop the development servers."
