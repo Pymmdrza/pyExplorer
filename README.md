@@ -228,3 +228,7 @@ run.py            Cross-platform Uvicorn launcher
 Dockerfile        Optional container build
 .github/workflows Continuous integration
 ```
+
+## License
+
+This project is distributed under the terms in [LICENSE](LICENSE).
