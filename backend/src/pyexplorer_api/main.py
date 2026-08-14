@@ -8,6 +8,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
@@ -20,6 +21,7 @@ from pyexplorer_api.core.logging import configure_logging
 from pyexplorer_api.exceptions import AppError
 from pyexplorer_api.services.cache import TTLCache
 from pyexplorer_api.services.realtime_transactions import RealtimeTransactionService
+from pyexplorer_api.web import SPAStaticFiles, find_frontend_dist
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,12 @@ class ResponseHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+
+        if request.url.path.startswith("/assets/"):
+            response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        elif response.headers.get("content-type", "").startswith("text/html"):
+            response.headers.setdefault("Cache-Control", "no-cache")
+
         return response
 
 
@@ -78,6 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.add_middleware(ResponseHeadersMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
@@ -118,4 +127,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(api_router, prefix=app_settings.api_prefix)
+
+    frontend_dist = find_frontend_dist()
+    if frontend_dist is not None:
+        app.mount("/", SPAStaticFiles(directory=frontend_dist, html=True), name="frontend")
+        logger.info("Serving frontend build from %s", frontend_dist)
+    else:
+        logger.info("Frontend build not found; API-only mode is active")
+
     return app
