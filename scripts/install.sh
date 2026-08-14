@@ -254,19 +254,23 @@ ensure_node() {
   fi
 
   say "Installing a private Node.js runtime..."
-  index_url="https://nodejs.org/download/release/latest-v${NODE_CHANNEL}.x/"
-  index_html="$(curl -fsSL --retry 3 "$index_url")"
-  node_file="$(printf '%s' "$index_html" | sed -n "s/.*href=\"\(node-v[0-9.]*-${PLATFORM}-${ARCH}\.tar\.gz\)\".*/\1/p" | head -n 1)"
-  [ -n "$node_file" ] || fail "Could not resolve a Node.js build for ${PLATFORM}-${ARCH}."
+  index_url="https://nodejs.org/dist/latest-v${NODE_CHANNEL}.x/"
+  checksums="$(curl -fsSL --retry 3 --retry-delay 1 "${index_url}SHASUMS256.txt")" || \
+    fail "Could not download the Node.js release manifest."
+
+  node_file="$(printf '%s\n' "$checksums" | awk -v platform="$PLATFORM" -v arch="$ARCH" '
+    $2 ~ ("^node-v[0-9.]+-" platform "-" arch "\\.tar\\.gz$") { print $2; exit }
+  ')"
+  [ -n "$node_file" ] || fail "Could not resolve a Node.js build for ${PLATFORM}-${ARCH} from the release manifest."
+
+  expected_checksum="$(printf '%s\n' "$checksums" | awk -v file="$node_file" '$2 == file { print $1; exit }')"
+  [ -n "$expected_checksum" ] || fail "Could not resolve the Node.js archive checksum."
 
   node_archive="$TEMP_DIR/$node_file"
   node_extract="$TEMP_DIR/node"
   mkdir -p "$node_extract"
-  curl -fsSL --retry 3 "$index_url$node_file" -o "$node_archive"
-
-  checksums="$(curl -fsSL --retry 3 "${index_url}SHASUMS256.txt")"
-  expected_checksum="$(printf '%s\n' "$checksums" | awk -v file="$node_file" '$2 == file { print $1; exit }')"
-  [ -n "$expected_checksum" ] || fail "Could not resolve the Node.js archive checksum."
+  curl -fsSL --retry 3 --retry-delay 1 "$index_url$node_file" -o "$node_archive" || \
+    fail "Could not download the Node.js runtime archive."
   if command -v sha256sum >/dev/null 2>&1; then
     actual_checksum="$(sha256sum "$node_archive" | awk '{print $1}')"
   elif command -v shasum >/dev/null 2>&1; then
