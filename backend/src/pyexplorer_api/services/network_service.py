@@ -73,7 +73,15 @@ class NetworkService:
                 mempool_size=to_int(mempool_size),
                 latest_block_height=to_int(latest_height),
                 providers=[
-                    ProviderStatus(name=provider.name, base_url=str(provider.base_url))
+                    ProviderStatus(
+                        name=provider.name,
+                        base_url=str(provider.base_url),
+                        status=(
+                            self.client.provider_status(provider.name)
+                            if hasattr(self.client, "provider_status")
+                            else "unknown"
+                        ),
+                    )
                     for provider in settings.providers
                 ],
             )

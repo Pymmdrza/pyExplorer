@@ -15,7 +15,7 @@ export function DetailHeader({ eyebrow, title, description }: DetailHeaderProps)
   return (
     <section className="detail-hero">
       <Link className="back-link" to="/">
-        ← Back to dashboard
+        Back to overview
       </Link>
       <p className="eyebrow">{eyebrow}</p>
       <h1>{title}</h1>
@@ -24,11 +24,11 @@ export function DetailHeader({ eyebrow, title, description }: DetailHeaderProps)
   )
 }
 
-export function LoadingPanel({ label = 'Loading explorer data…' }: { label?: string }) {
+export function LoadingPanel({ label = 'Loading explorer data...' }: { label?: string }) {
   return (
-    <div className="section-card empty-state" role="status">
+    <div className="section-card empty-state" role="status" aria-live="polite">
       <strong>{label}</strong>
-      <span>Retrieving the latest explorer data.</span>
+      <span>Retrieving the latest available data.</span>
     </div>
   )
 }
@@ -46,7 +46,7 @@ export function KeyValue({ label, value }: KeyValueProps) {
   return (
     <div className="key-value">
       <dt>{label}</dt>
-      <dd>{value ?? '—'}</dd>
+      <dd>{value ?? 'Not available'}</dd>
     </div>
   )
 }

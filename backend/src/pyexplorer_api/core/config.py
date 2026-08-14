@@ -71,10 +71,17 @@ class Settings(BaseSettings):
 
     cache_stats_ttl_seconds: int = 120
     cache_resource_ttl_seconds: int = 600
+    cache_max_entries: int = 512
+
+    http_max_connections: int = 24
+    http_max_keepalive_connections: int = 12
+    provider_failure_threshold: int = 3
+    provider_cooldown_seconds: float = 20.0
 
     realtime_enabled: bool = True
     blockchain_ws_url: str = "wss://ws.blockchain.info/inv"
     realtime_queue_size: int = 200
+    realtime_subscriber_queue_size: int = 32
     realtime_reconnect_initial_seconds: float = 3.0
     realtime_reconnect_max_seconds: float = 60.0
 

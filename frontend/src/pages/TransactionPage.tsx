@@ -22,7 +22,7 @@ export function TransactionPage() {
         description="Review transaction timing, confirmations, inputs, outputs, fees, and related block information."
       />
 
-      {transaction.loading ? <LoadingPanel label="Loading transaction…" /> : null}
+      {transaction.loading ? <LoadingPanel label="Loading transaction..." /> : null}
       {transaction.error ? <ErrorPanel message={transaction.error} /> : null}
 
       {transaction.data ? (

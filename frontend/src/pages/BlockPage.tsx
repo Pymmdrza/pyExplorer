@@ -20,7 +20,7 @@ export function BlockPage() {
         description="Inspect block metadata, mining context, and transaction summaries."
       />
 
-      {block.loading ? <LoadingPanel label="Loading block…" /> : null}
+      {block.loading ? <LoadingPanel label="Loading block..." /> : null}
       {block.error ? <ErrorPanel message={block.error} /> : null}
 
       {block.data ? (
@@ -73,8 +73,8 @@ export function BlockPage() {
                 <KeyValue label="Timestamp" value={formatIsoDate(block.data.timestamp)} />
                 <KeyValue label="Merkle root" value={block.data.merkle_root} />
                 <KeyValue label="Nonce" value={formatInteger(block.data.nonce)} />
-                <KeyValue label="Bits" value={block.data.bits ?? '—'} />
-                <KeyValue label="Version" value={block.data.version ?? '—'} />
+                <KeyValue label="Bits" value={block.data.bits ?? '-'} />
+                <KeyValue label="Version" value={block.data.version ?? '-'} />
               </dl>
             </article>
           </section>

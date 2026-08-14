@@ -1,37 +1,11 @@
-# Git
 .git
-.gitignore
-venv/*
+.github
 .idea
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.env
-.env.*
-!.env.example
-node_modules/
-frontend/node_modules/
-frontend/dist/
-backend/.pytest_cache/
-backend/.ruff_cache/
-backend/htmlcov/
-backend/.coverage
-
-# IDE
 .vscode
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Project specific
-*.log
-tests/
-docs/
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/dist
+.env

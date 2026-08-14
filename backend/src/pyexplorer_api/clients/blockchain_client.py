@@ -1,7 +1,10 @@
-"""Async client for Bitcoin provider APIs and blockchain.info utility endpoints."""
+"""Async client for Bitcoin provider APIs and public network endpoints."""
 
 import asyncio
 import logging
+import random
+from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Literal
 from urllib.parse import parse_qsl, urlencode
 
@@ -15,20 +18,42 @@ logger = logging.getLogger(__name__)
 EndpointType = Literal["address", "tx", "block", "block_index"]
 
 
+@dataclass(slots=True)
+class ProviderRuntimeState:
+    failures: int = 0
+    unavailable_until: float = 0.0
+    status: str = "unknown"
+
+
 class BlockchainClient:
-    """Async HTTP client with provider fallback and bounded retry behavior."""
+    """Async HTTP client with fallback, retry, and lightweight circuit breaking."""
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._states = {provider.name: ProviderRuntimeState() for provider in settings.providers}
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(settings.request_timeout_seconds),
+            limits=httpx.Limits(
+                max_connections=settings.http_max_connections,
+                max_keepalive_connections=settings.http_max_keepalive_connections,
+            ),
+            follow_redirects=True,
             headers={
-                "User-Agent": "pyExplorer/0.1 (+https://github.com/Pymmdrza/pyExplorer)"
+                "Accept": "application/json",
+                "User-Agent": "pyExplorer/1.0 (+https://github.com/Pymmdrza/pyExplorer)",
             },
         )
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+    def provider_status(self, provider_name: str) -> str:
+        state = self._states.get(provider_name)
+        if state is None:
+            return "unknown"
+        if state.unavailable_until > monotonic():
+            return "degraded"
+        return state.status
 
     async def get_transaction(self, tx_hash: str) -> dict[str, Any] | None:
         return await self.get_provider_resource("tx", tx_hash, suffix="?page=1")
@@ -40,15 +65,22 @@ class BlockchainClient:
         page: int | None = None,
         per_page: int | None = None,
     ) -> dict[str, Any] | None:
-        suffix = self.settings.providers[0].address_suffixes.get(detail_level, "")
-        suffix = self._merge_query_suffix(
-            suffix,
-            {
-                "page": page,
-                "pageSize": per_page,
-            },
-        )
-        return await self.get_provider_resource("address", address, suffix=suffix)
+        for provider in self.settings.providers:
+            suffix = provider.address_suffixes.get(detail_level, "")
+            suffix = self._merge_query_suffix(suffix, {"page": page, "pageSize": per_page})
+            response = await self._request_provider(
+                provider,
+                self._build_provider_url(provider, "address", address, suffix),
+            )
+            if response is not None:
+                return response
+        logger.warning("All providers failed for address resource")
+        if self.settings.providers and all(
+            self.provider_status(provider.name) == "degraded"
+            for provider in self.settings.providers
+        ):
+            raise UpstreamServiceError("All configured data providers are unavailable.")
+        return None
 
     async def get_block(self, height: int | str) -> dict[str, Any] | None:
         return await self.get_provider_resource("block", str(height))
@@ -56,83 +88,120 @@ class BlockchainClient:
     async def get_provider_resource(
         self, endpoint_type: EndpointType, resource_id: str, suffix: str = ""
     ) -> dict[str, Any] | None:
-        errors: list[dict[str, Any]] = []
         for provider in self.settings.providers:
             url = self._build_provider_url(provider, endpoint_type, resource_id, suffix)
-            response = await self._request_json(url, provider.name)
+            response = await self._request_provider(provider, url)
             if response is not None:
                 return response
-            errors.append({"provider": provider.name, "url": url})
-
-        logger.warning("All providers failed for %s/%s", endpoint_type, resource_id)
+        logger.warning("All providers failed for %s resource", endpoint_type)
+        if self.settings.providers and all(
+            self.provider_status(provider.name) == "degraded"
+            for provider in self.settings.providers
+        ):
+            raise UpstreamServiceError("All configured data providers are unavailable.")
         return None
 
     async def get_json_url(self, url: str) -> dict[str, Any] | None:
-        for attempt in range(1, self.settings.provider_max_retries + 1):
-            try:
-                response = await self._client.get(url)
-                if response.status_code == 404:
-                    return None
-                response.raise_for_status()
-                return response.json()
-            except (httpx.HTTPError, ValueError) as exc:
-                logger.warning(
-                    "JSON request failed",
-                    extra={"url": url, "attempt": attempt, "error": str(exc)},
-                )
-                await self._sleep_before_retry(attempt)
-        raise UpstreamServiceError(
-            "Unable to load blockchain JSON endpoint.", {"url": url}
-        )
+        response = await self._request(url, label="network endpoint")
+        if response is None or response.status_code == 404:
+            return None
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise UpstreamServiceError("Network endpoint returned invalid JSON.") from exc
+        if not isinstance(payload, dict):
+            raise UpstreamServiceError("Network endpoint returned an unexpected payload.")
+        return payload
 
     async def get_text_url(self, url: str) -> str | None:
-        for attempt in range(1, self.settings.provider_max_retries + 1):
-            try:
-                response = await self._client.get(url)
-                if response.status_code == 404:
-                    return None
-                response.raise_for_status()
-                return response.text.strip()
-            except httpx.HTTPError as exc:
-                logger.warning(
-                    "Text request failed",
-                    extra={"url": url, "attempt": attempt, "error": str(exc)},
-                )
-                await self._sleep_before_retry(attempt)
-        raise UpstreamServiceError(
-            "Unable to load blockchain text endpoint.", {"url": url}
-        )
+        response = await self._request(url, label="network endpoint")
+        if response is None or response.status_code == 404:
+            return None
+        return response.text.strip()
 
-    async def _request_json(
-        self, url: str, provider_name: str
+    async def _request_provider(
+        self, provider: ProviderConfig, url: str
     ) -> dict[str, Any] | None:
-        for attempt in range(1, self.settings.provider_max_retries + 1):
+        state = self._states[provider.name]
+        if state.unavailable_until > monotonic():
+            return None
+
+        try:
+            response = await self._request(url, label=provider.name, tolerate_errors=True)
+        except UpstreamServiceError:
+            self._record_provider_failure(provider.name)
+            return None
+        if response is None:
+            self._record_provider_failure(provider.name)
+            return None
+        if response.status_code == 404:
+            state.failures = 0
+            state.unavailable_until = 0.0
+            state.status = "operational"
+            return None
+        try:
+            payload = response.json()
+        except ValueError:
+            self._record_provider_failure(provider.name)
+            return None
+        if not isinstance(payload, dict):
+            self._record_provider_failure(provider.name)
+            return None
+        state.failures = 0
+        state.unavailable_until = 0.0
+        state.status = "operational"
+        return payload
+
+    async def _request(
+        self,
+        url: str,
+        *,
+        label: str,
+        tolerate_errors: bool = False,
+    ) -> httpx.Response | None:
+        attempts = max(self.settings.provider_max_retries, 1)
+        for attempt in range(1, attempts + 1):
             try:
                 response = await self._client.get(url)
                 if response.status_code == 404:
-                    return None
-                if response.status_code == 503:
-                    logger.warning(
-                        "Provider unavailable",
-                        extra={"provider": provider_name, "url": url},
-                    )
-                    await self._sleep_before_retry(attempt)
-                    continue
+                    return response
+                if response.status_code == 429 or response.status_code >= 500:
+                    if attempt < attempts:
+                        await self._sleep_before_retry(attempt)
+                        continue
                 response.raise_for_status()
-                return response.json()
+                return response
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
                 logger.warning(
-                    "Provider network issue",
-                    extra={"provider": provider_name, "error": str(exc)},
+                    "Upstream network failure",
+                    extra={"source": label, "attempt": attempt},
                 )
-                await self._sleep_before_retry(attempt)
-            except (httpx.HTTPStatusError, ValueError) as exc:
+                if attempt < attempts:
+                    await self._sleep_before_retry(attempt)
+                    continue
+                if tolerate_errors:
+                    return None
+                raise UpstreamServiceError("Unable to reach an upstream network service.") from exc
+            except httpx.HTTPStatusError as exc:
                 logger.warning(
-                    "Provider response rejected",
-                    extra={"provider": provider_name, "error": str(exc)},
+                    "Upstream HTTP failure",
+                    extra={"source": label, "status": exc.response.status_code},
                 )
-                return None
+                if tolerate_errors:
+                    return None
+                raise UpstreamServiceError(
+                    "An upstream network service rejected the request.",
+                    {"status": exc.response.status_code},
+                ) from exc
         return None
+
+    def _record_provider_failure(self, provider_name: str) -> None:
+        state = self._states[provider_name]
+        state.failures += 1
+        state.status = "degraded"
+        if state.failures >= self.settings.provider_failure_threshold:
+            state.unavailable_until = monotonic() + self.settings.provider_cooldown_seconds
+            state.failures = 0
 
     def _build_provider_url(
         self,
@@ -142,24 +211,22 @@ class BlockchainClient:
         suffix: str,
     ) -> str:
         base_url = str(provider.base_url).rstrip("/") + "/"
-        if endpoint_type == "address":
-            return f"{base_url}{provider.address_prefix}{resource_id}{suffix}"
-        if endpoint_type == "tx":
-            return f"{base_url}{provider.tx_prefix}{resource_id}{suffix}"
-        if endpoint_type == "block":
-            return f"{base_url}{provider.block_prefix}{resource_id}{suffix}"
-        if endpoint_type == "block_index":
-            return f"{base_url}{provider.block_index_prefix}{resource_id}{suffix}"
-        raise ValueError(f"Unsupported endpoint type: {endpoint_type}")
+        prefix = {
+            "address": provider.address_prefix,
+            "tx": provider.tx_prefix,
+            "block": provider.block_prefix,
+            "block_index": provider.block_index_prefix,
+        }[endpoint_type]
+        return f"{base_url}{prefix}{resource_id}{suffix}"
 
     async def _sleep_before_retry(self, attempt: int) -> None:
-        await asyncio.sleep(self.settings.retry_backoff_seconds * attempt)
+        base = self.settings.retry_backoff_seconds * (2 ** (attempt - 1))
+        await asyncio.sleep(base * random.uniform(0.85, 1.15))
 
-    def _merge_query_suffix(self, suffix: str, params: dict[str, Any]) -> str:
+    @staticmethod
+    def _merge_query_suffix(suffix: str, params: dict[str, Any]) -> str:
         query = dict(parse_qsl(suffix[1:] if suffix.startswith("?") else suffix))
         for key, value in params.items():
             if value is not None:
                 query[key] = str(value)
-        if not query:
-            return ""
-        return f"?{urlencode(query)}"
+        return f"?{urlencode(query)}" if query else ""

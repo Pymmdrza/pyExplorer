@@ -2,13 +2,13 @@ services:
   api:
     build:
       context: ./backend
-    env_file:
-      - .env
     environment:
-      PYEXPLORER_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080
+      PYEXPLORER_ENVIRONMENT: production
+      PYEXPLORER_CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
     ports:
       - "8000:8000"
     restart: unless-stopped
+    init: true
 
   web:
     build:
@@ -21,3 +21,4 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
+    init: true

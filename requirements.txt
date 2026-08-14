@@ -1,7 +1,0 @@
-asyncio
-flask
-pandas
-python-dotenv
-requests
-weasyprint
-websockets

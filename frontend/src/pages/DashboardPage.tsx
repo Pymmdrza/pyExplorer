@@ -143,7 +143,7 @@ export function DashboardPage() {
               ))
             ) : (
               <div className="empty-state">
-                <strong>Waiting for the first mempool event…</strong>
+                <strong>Waiting for the first mempool event...</strong>
                 <span>Start the local data service to show unconfirmed transactions here.</span>
               </div>
             )}
@@ -187,7 +187,10 @@ export function DashboardPage() {
           {overview.providers.length ? (
             overview.providers.map((provider) => (
               <article className="provider-card" key={provider.name}>
-                <span className="provider-card__dot" aria-hidden="true" />
+                <span
+                  className={`provider-card__dot provider-card__dot--${provider.status}`}
+                  aria-hidden="true"
+                />
                 <div>
                   <strong>{provider.name}</strong>
                   <small>Operational source</small>

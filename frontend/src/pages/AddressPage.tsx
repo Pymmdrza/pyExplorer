@@ -20,7 +20,7 @@ export function AddressPage() {
         description="Review balances, aggregate flow, and the latest activity for this address."
       />
 
-      {addressState.loading ? <LoadingPanel label="Loading address…" /> : null}
+      {addressState.loading ? <LoadingPanel label="Loading address..." /> : null}
       {addressState.error ? <ErrorPanel message={addressState.error} /> : null}
 
       {addressState.data ? (

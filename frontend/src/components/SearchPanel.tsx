@@ -61,7 +61,7 @@ export function SearchPanel() {
           autoComplete="off"
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Searching…' : 'Search'}
+          {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
 

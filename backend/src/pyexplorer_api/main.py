@@ -2,11 +2,15 @@
 
 import logging
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 from pyexplorer_api import __version__
 from pyexplorer_api.api.v1.router import api_router
@@ -20,14 +24,28 @@ from pyexplorer_api.services.realtime_transactions import RealtimeTransactionSer
 logger = logging.getLogger(__name__)
 
 
+class ResponseHeadersMiddleware(BaseHTTPMiddleware):
+    """Attach lightweight security and request-correlation headers."""
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        request_id = request.headers.get("X-Request-ID") or uuid4().hex
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create and configure a FastAPI application instance."""
     app_settings = settings or get_settings()
     configure_logging(app_settings.log_level)
 
+    @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         client = BlockchainClient(app_settings)
-        cache = TTLCache()
+        cache: TTLCache[object] = TTLCache(max_entries=app_settings.cache_max_entries)
         realtime = RealtimeTransactionService(app_settings)
 
         app.state.settings = app_settings
@@ -49,21 +67,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="pyExplorer API",
         description=(
-            "Modern API for exploring Bitcoin transactions, addresses, blocks, "
+            "Bitcoin blockchain explorer API for transactions, addresses, blocks, "
             "and network data."
         ),
         version=__version__,
         lifespan=lifespan,
         docs_url="/docs",
-        redoc_url="/redoc",
+        redoc_url=None,
+        openapi_url=f"{app_settings.api_prefix}/openapi.json",
     )
 
+    app.add_middleware(ResponseHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["GET", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Accept", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
     )
 
     @app.exception_handler(AppError)
@@ -74,9 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(
-        _: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse(
             status_code=422,
             content={

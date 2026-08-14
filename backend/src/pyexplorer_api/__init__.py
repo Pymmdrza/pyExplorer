@@ -1,7 +1,4 @@
-"""Modern FastAPI backend for pyExplorer."""
+"""pyExplorer API package."""
 
 __all__ = ["__version__"]
-__version__ = "0.1.0"
-"""Modern FastAPI backend package for pyExplorer."""
-
-__version__ = "0.1.0"
+__version__ = "1.0.0"
